@@ -228,6 +228,10 @@ Agents:
 
 ## FLUJO COMPLETO DE TRANSACCIÓN
 
+### Caso de Uso A: Servicio Pequeño (S/150 — pago único)
+
+Un plomero repara un baño. Pago único, escrow simple, un solo ciclo de arbitraje.
+
 ### PASO 1: Crear Deal (Telegram + Backend)
 
 ```
@@ -417,6 +421,141 @@ Timeline:
 [Rating Section]:
 Juan: ⭐⭐⭐⭐⭐ "Trabajo excelente"
 Plomero: ⭐⭐⭐⭐⭐ "Pagó sin problemas"
+```
+
+---
+
+### Caso de Uso B: Proyecto Grande con Pagos por Hitos (S/12,000 — remodelación completa)
+
+Una empresa constructora remodela una cocina completa para un cliente. El monto ya no cabe en
+un pago único ni en un veredicto binario: se libera en **3 hitos**, cada uno con su propio
+escrow, evidencia y arbitraje, y el payout dispara guardrails adicionales por tratarse de un
+monto alto.
+
+```
+DEAL: "Remodelación cocina completa"
+MONTO TOTAL: S/12,000 (~3,250 USDT)
+ESTRUCTURA: 3 hitos (Demolición 20% | Instalación 50% | Acabados 30%)
+```
+
+#### PASO 1: Crear Deal con Hitos (Telegram + Backend)
+
+```
+USUARIO (Telegram):
+Constructora: "/crear_deal"
+Bot: "¿Qué servicio?"
+Constructora: "Remodelación cocina completa"
+Bot: "¿Precio total?"
+Constructora: "12000"
+Bot: "Monto > S/1,000. ¿Dividir en hitos? [Sí] [No]"
+Constructora: "Sí" → "3 hitos: Demolición 20%, Instalación 50%, Acabados 30%"
+
+↓ POST /api/deals/create { milestones: true }
+
+BACKEND:
+├─ Crear deal padre: "deal_xyz789" (status: pending_buyer)
+├─ Crear 3 sub-deals (milestones):
+│  ├─ milestone_1: "Demolición" — S/2,400 — status: pending
+│  ├─ milestone_2: "Instalación" — S/6,000 — status: locked
+│  └─ milestone_3: "Acabados" — S/3,600 — status: locked
+├─ Flag: high_value = true (monto > $1,000 → guardrails extra)
+└─ Emitir WebSocket: "deal_created" (con milestones)
+
+WEB (dashboard):
+└─ Deal card muestra barra de progreso: [Hito 1/3] ░░░░░░░░░░ 0%
+```
+
+#### PASO 2-4: Ciclo por Hito (se repite 3 veces)
+
+```
+Por cada hito activo:
+
+1. PAGO (Kapso)
+   Cliente paga SOLO el monto del hito actual (ej: S/2,400 del Hito 1)
+   → Escrow parcial, no el total del proyecto
+
+2. EVIDENCIA
+   Constructora sube fotos específicas del hito ("Demolición completa")
+   → IPFS + metadata, asociadas a milestone_1, no al deal completo
+
+3. ARBITRAJE (GenLayer)
+   Gemini + Claude evalúan SOLO el alcance de ese hito
+   → Consensus: "CUMPLIDO" (2/2) desbloquea milestone_1
+
+4. PAYOUT PARCIAL (PayBot)
+   Se libera solo S/2,400 → ~650 USDT a la constructora
+   El resto (S/9,600) sigue en escrow, milestone_2 se activa
+
+WEB (en vivo):
+[Hito 1/3] ██████████ 100% ✅  →  [Hito 2/3] ░░░░░░░░░░ 0% (activo)
+```
+
+#### PASO 5: Payout de Hito Alto Valor — Guardrails Extra (PayBot + WDK)
+
+```
+BACKEND (PayBot Agent) — flujo normal + capas extra por high_value=true:
+
+├─ Verificar arbitration: CUMPLIDO ✓ (2/2 consensus, sin margen de duda)
+├─ Verificar guardrails ESTÁNDAR:
+│  ├─ Constructora en whitelist? ✓
+│  └─ Daily limit OK? ✓ (acumulado del día, no solo este payout)
+│
+├─ Verificar guardrails de MONTO ALTO (> $1,000):
+│  ├─ Requiere confidence ≥ 95% en AMBOS agentes (no solo mayoría) ✓
+│  ├─ Revisión manual opcional si confidence < 95% → pausa + notif admin
+│  ├─ Payout se ejecuta en tramos, nunca el total de una vez
+│  └─ Segundo log de auditoría (payout_logs + high_value_audit_logs)
+│
+├─ Convertir: S/2,400 → ~650 USDT (solo el hito, no el proyecto completo)
+├─ Ejecutar: wdk send --to constructora --amount 650 --token USDT
+├─ Recibir: tx_hash = "0x9f8e7d..."
+├─ Guardar en Supabase (vinculado a milestone_1, no al deal padre)
+└─ Emitir WebSocket: "milestone_payout_complete"
+
+WEB (ANIMACIÓN PAYBOT — vista de hitos):
+┌─────────────────────────────────────┐
+│ PAYOUT — Hito 1/3: Demolición        │
+│ [████████████████████████] Complete │
+│ TX: 0x9f8e7d...                      │
+│ Amount: 650 USDT (de 3,250 totales)  │
+│ Escrow restante: 2,600 USDT          │
+│ Status: ✅ CONFIRMED                 │
+└─────────────────────────────────────┘
+
+BOT (notifica):
+"✅ Hito 1/3 completado: Demolición
+✅ 650 USDT liberados a Constructora
+
+Progreso del proyecto: S/2,400 / S/12,000 (20%)
+Escrow restante: S/9,600
+Siguiente hito: Instalación (S/6,000)
+[Ver dashboard completo]"
+
+WEB (final, tras los 3 hitos):
+Deal status: "COMPLETED"
+Timeline:
+├─ Hito 1 (Demolición):   S/2,400 ✓  pagado 2024-08-23 15:27
+├─ Hito 2 (Instalación):  S/6,000 ✓  pagado 2024-08-24 11:10
+├─ Hito 3 (Acabados):     S/3,600 ✓  pagado 2024-08-25 09:45
+└─ Total liberado: S/12,000 (~3,250 USDT) en 3 payouts
+
+[Rating Section]:
+Cliente: ⭐⭐⭐⭐⭐ "Proyecto grande, cero fricción en pagos por etapa"
+Constructora: ⭐⭐⭐⭐⭐ "Cobré cada avance sin perseguir al cliente"
+```
+
+#### Diferencias clave vs. Caso A (tabla)
+
+```
+                        CASO A (S/150)          CASO B (S/12,000)
+Pagos                   1 pago único            3 pagos por hito
+Escrow                  Todo de una vez         Parcial, por hito
+Evidencia               1 set de fotos          1 set de fotos por hito
+Arbitraje               1 ciclo GenLayer         3 ciclos GenLayer (uno por hito)
+Confidence requerido    Mayoría simple           ≥95% en ambos agentes
+Revisión manual         No aplica                Opcional si confidence < 95%
+Payout                  1 transacción WDK        3 transacciones WDK (tramos)
+Auditoría               payout_logs              payout_logs + high_value_audit_logs
 ```
 
 ---
@@ -879,6 +1018,21 @@ created_at TIMESTAMP
 updated_at TIMESTAMP
 completed_at TIMESTAMP
 smart_contract_address VARCHAR
+is_milestone_based BOOLEAN (default false)
+high_value BOOLEAN (true si amount_usdt > 1000, activa guardrails extra)
+```
+
+**milestones** (solo si `deals.is_milestone_based = true`)
+```sql
+id UUID PRIMARY KEY
+deal_id UUID (FK deals, deal padre)
+order_index INT (1, 2, 3...)
+description TEXT
+amount_pen FLOAT
+amount_usdt FLOAT
+status VARCHAR (locked, pending, escrowed, arbitrating, completed)
+unlocked_at TIMESTAMP (cuándo se activó tras completar el hito anterior)
+completed_at TIMESTAMP
 ```
 
 **photos**
