@@ -1,641 +1,1406 @@
-# Verity 🚀
+# 🚀 VERIFY - Arquitectura Completa & Plan de Desarrollo
 
-**Sistema universal de garantía blockchain + Agente autónomo de pagos con WDK CLI**
-
-> Transformar cualquier transacción P2P en un acuerdo garantizado, arbitrado por IA y ejecutado automáticamente.
+**Documento de referencia para desarrollo (26 horas)**
 
 ---
 
-## 📋 Tabla de Contenidos
+## 📋 TABLA DE CONTENIDOS
 
-- [Problema](#problema)
-- [Público Objetivo](#público-objetivo)
-- [Solución](#solución)
-- [Características Principales](#características-principales)
-- [Arquitectura](#arquitectura)
-- [Estructura del Repositorio](#estructura-del-repositorio)
-- [Stack Tecnológico](#stack-tecnológico)
-- [Casos de Uso](#casos-de-uso)
-- [Getting Started](#getting-started)
-- [Roadmap](#roadmap)
-
----
-
-## Problema
-
-### El mercado P2P en Latinoamérica carece de confianza sin intermediarios
-
-En Perú y Latinoamérica, **$50B+ anuales** se transan entre individuos (Facebook Marketplace, servicios informales), pero **sin mecanismos de garantía descentralizados**:
-
-- **iPhone usado**: ¿Funciona realmente? ¿Pantalla OK? Comprador tiene miedo.
-- **Caución de alquiler**: Arrendador retiene dinero, inquilino demanda, años de litigio.
--  **Freelance internacional**: Dev espera 30 días por pago, cliente teme que nunca entregue.
-- **Servicios**: ¿Cómo sabe el cliente que recibirá calidad antes de pagar?
-- **Remesas**: Enviar dinero a familiares = comisiones, desconfianza, sin auditoría.
-
-**Resultado**: Transacciones fracasan, dinero perdido, relaciones destruidas, usuarios usan intermediarios caros (MercadoPago cobra 6%).
+1. [Resumen Ejecutivo](#resumen-ejecutivo)
+2. [El Problema](#el-problema)
+3. [La Solución](#la-solución)
+4. [Arquitectura General](#arquitectura-general)
+5. [Flujo Completo de Transacción](#flujo-completo-de-transacción)
+6. [Estructura del Repositorio](#estructura-del-repositorio)
+7. [Plan de 26 Horas](#plan-de-26-horas)
+8. [Especificaciones Técnicas](#especificaciones-técnicas)
+9. [API Endpoints](#api-endpoints)
+10. [Componentes Principales](#componentes-principales)
+11. [Setup Inicial](#setup-inicial)
+12. [Testing & Deployment](#testing--deployment)
 
 ---
 
-## Público Objetivo
+## RESUMEN EJECUTIVO
 
-### Primaria (MVP)
-1. **Compradores/vendedores P2P** en Perú, Colombia, Argentina, México
-   - Edad: 18-50
-   - Transacciones: $50-$3,000
-   - Tech-savvy pero no expertos en cripto
-   - Pain point: Desconfianza, pérdida de dinero
+**Proyecto:** Verify - Plataforma de garantía universal P2P con arbitraje por IA
 
-2. **Trabajadores informales**
-   - Taxistas, tutores, plomeros, electricistas
-   - 8M+ en Perú solo
-   - No tienen acceso a sistemas bancarios formales
-   - Usan Efectivo, temen ser estafados
+**Público Objetivo:** Mercado informal (taxistas, plomeros, electricistas, vendedores)
 
-3. **Propietarios e inquilinos**
-   - Conflictos de caución
-   - Market: ~2M apartamentos alquilados anuales en Latam
+**Diferencial:**
+- ✅ **Kapso**: Pagos locales sin wallet (QR, transferencia bancaria)
+- ✅ **Telegram Bot**: Interfaz conversacional natural
+- ✅ **Web Dashboard**: Transparencia en tiempo real
+- ✅ **GenLayer**: Arbitraje por IA (Gemini + Claude)
+- ✅ **PayBot + WDK**: Pagos automáticos en USDT
+- ✅ **Animación Live**: Ver agents trabajando en la web
 
-4. **Freelancers internacionales**
-   - Developers, diseñadores, escritores
-   - Temen non-payment en plataformas freelance
+**Stack:**
+- Frontend: Next.js 14 (dashboard) + Telegram Bot (Node.js)
+- Backend: FastAPI (Python)
+- Blockchain: Solidity (Avalanche Sepolia)
+- Pagos: Kapso + WDK CLI
+- Data: Supabase + Pinata (IPFS)
+- AI: Gemini + Claude API
 
-### Secundaria (Post-MVP)
-- Medianas empresas (proveedores + comprador)
-- Seguros descentralizados
-- Préstamos P2P garantizados
+**Timeline:** 26 horas (Aleph Hackathon)
+
+**Track:** WDK Track 1A ($1,000 USDT)
 
 ---
 
-## Solución
+## EL PROBLEMA
 
-### TrustLayer: Sistema Universal de Garantía Blockchain
-
-**Concepto core**: Cualquier acuerdo entre dos personas → dinero en escrow → si hay conflicto → GenLayer (IA) arbitra en 15 minutos → payout automático.
-
-**Sin intermediario, sin comisión (o mínima), sin esperar abogados**.
-
-#### Cómo funciona:
+### Barrera #1: Adopción en Mercado Informal
 
 ```
-1. CREAR DEAL
-   └─ Seller + Buyer acuerdan términos (descripción, monto, fotos)
-   
-2. DEPOSITAR EN ESCROW
-   └─ Buyer transfiere dinero a Smart Contract
-   └─ Dinero bloqueado, no accesible (trustless)
-   
-3. CUMPLIR ACUERDO
-   └─ Seller entrega producto/servicio
-   └─ Buyer sube fotos/evidencia de cumplimiento
-   
-4. ARBITRAJE (GenLayer)
-   └─ 5 LLMs analizan en paralelo: "¿Se cumplió?"
-   └─ Consenso: mayoría (3+/5) gana
-   └─ Veredicto en 15 minutos
-   
-5. PAYOUT AUTOMÁTICO (PayBot + WDK CLI)
-   └─ Backend detecta veredicto
-   └─ PayBot aplica guardrails (whitelist, límites, auditoría)
-   └─ Ejecuta `wdk send --to {winner} --amount {dinero}`
-   └─ USDT llega automáticamente, sin intervención humana
-   
-6. SCORE ON-CHAIN
-   └─ Ambos usuarios reciben rating permanente
-   └─ Transparencia total, imposible de falsificar
+ANTES (Dashboard web tradicional):
+Usuario no-tech = "¿Wallet? ¿Blockchain? ¿Seed phrase?"
+                  ❌ 95% abandona aquí
+                  ❌ Requiere Metamask
+                  ❌ Requiere entender gas fees
+
+AHORA (Kapso + Telegram):
+Usuario = Abre Telegram (ya está ahí)
+        = Escanea QR Kapso (paga con su banco)
+        = ✅ 30 segundos, dinero real local
+        = ✅ No ve blockchain nunca
 ```
 
-### Diferenciadores
-
-| Aspecto | TrustLayer | Marketplace (OLX) | Banco | PayPal |
-|---------|-----------|------------------|-------|--------|
-| **Arbitraje** | GenLayer (IA) | Humano (lento) | Abogado (30 días) | Desconocido |
-| **Comisión** | 0% (MVP) | 5-10% | 2-5% | 2.9% + $0.30 |
-| **Velocidad** | 15 min | — | 1-3 meses | 1-3 días |
-| **Transfronterizo** | ✅ USDT | ❌ | ⚠️ | ✅ pero caro |
-| **Transparencia** | 100% on-chain | ❌ | ❌ | ❌ |
-| **Descentralizado** | ✅ | ❌ | ❌ | ❌ |
-
----
-
-## Características Principales
-
-### TrustLayer (Escrow + Arbitraje)
-- ✅ Crear deals (descripción, monto, fotos IPFS)
-- ✅ Escrow Smart Contract (Avalanche C-Chain)
-- ✅ Subir evidencia (fotos, videos)
-- ✅ GenLayer arbitrage (5 LLMs voting)
-- ✅ Rating on-chain (permanente, inmutable)
-- ✅ Dashboard de historial
-
-### PayBot (Agente WDK CLI)
-- ✅ Agente detecta veredicto automáticamente
-- ✅ Guardrails de seguridad:
-  - Whitelist de recipientes
-  - Spending cap ($1,000 por transacción)
-  - Daily limit ($5,000 por día)
-  - Confirmación manual para montos > $500
-- ✅ WDK CLI: `wdk send --to {addr} --amount {amt} --json`
-- ✅ Audit logs completos (JSON receipt)
-- ✅ Transacciones paralelas (batch payouts)
-
-### Casos de Uso Soportados
-
-1. **Compra de usados** (iPhone, moto, laptop)
-   - Escrow $100-$3,000
-   - Fotos + GenLayer valida estado
-   - Payout en 20 minutos
-
-2. **Servicios** (tutor, plomero, electricista)
-   - Depósito $20-$200
-   - Foto resultado → GenLayer valida
-   - Pago automático
-
-3. **Alquiler** (caución departamento)
-   - Escrow $500-$5,000 por 12 meses
-   - Fotos final → GenLayer calcula daños
-   - Payout proporcional (ej: 90% inquilino, 10% dueño)
-
-4. **Freelance/Outsourcing**
-   - Escrow $500-$10,000
-   - Entrega código + deploy
-   - GenLayer valida funcionalidad
-   - Pago garantizado (sin esperar 30 días)
-
-5. **Remesas**
-   - Sender deposita USDT
-   - Receiver recibe sin comisión (paymaster cubre)
-   - Score on-chain para historial
-
----
-
-## Arquitectura
-
-### Diagrama de Capas
+### Barrera #2: Visibilidad del Arbitraje
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Frontend (Next.js 14)                              │
-│  - Deal creation form                               │
-│  - Status dashboard                                 │
-│  - Arbitrage results                                │
-│  - Payout notifications                             │
-└─────────────────────────────────────────────────────┘
-                         ↕
-┌─────────────────────────────────────────────────────┐
-│  Backend (FastAPI + Python)                         │
-│  - Deal management API                              │
-│  - GenLayer trigger                                 │
-│  - PayBot orchestration                             │
-│  - Audit logs                                       │
-└─────────────────────────────────────────────────────┘
-                         ↕
-┌─────────────────────────────────────────────────────┐
-│  WDK CLI + Wallets (Node.js)     ◄◄ CORE TRACK 1    │
-│  - Create/import wallets                            │
-│  - Check balances                                   │
-│  - Send USDT (guardrails)                           │
-│  - JSON output (auditable)                          │
-└─────────────────────────────────────────────────────┘
-                         ↕
-┌─────────────────────────────────────────────────────┐
-│  Smart Contracts (Solidity)                         │
-│  - Deal.sol: Escrow, state machine, veredicto       │
-│  - Deployment: Avalanche Sepolia                    │
-└─────────────────────────────────────────────────────┘
-                         ↕
-┌─────────────────────────────────────────────────────┐
-│  GenLayer (Python + Gemini + Claude)                │
-│  - 5 LLMs voting in parallel                        │
-│  - Image analysis                                   │
-│  - Consensus logic                                  │
-└─────────────────────────────────────────────────────┘
-                         ↕
-┌─────────────────────────────────────────────────────┐
-│  Data + Blockchain                                  │
-│  - Supabase: deals, images, scores, audit logs      │
-│  - Avalanche: USDT, Deal.sol state                  │
-│  - IPFS (Pinata): Deal images                       │
-└─────────────────────────────────────────────────────┘
+BOT (solo):
+Bot: "GenLayer analizando..."
+     [espera 30 seg]
+Bot: "✅ Pagado"
+User: "¿Qué pasó en esos 30 seg?" ❌
+
+BOT + WEB + ANIMACIÓN:
+Bot: "GenLayer analizando... [Ver en vivo](verify.app/deals/123)"
+Web: Animación en vivo mostrando:
+     ├─ Gemini analizando: [||||    ]
+     ├─ Claude analizando: [  ||||  ]
+     ├─ Consensus: "CUMPLIDO"
+     └─ PayBot enviando: "Transferencia a Juan..."
+User: Entiende EXACTAMENTE qué pasó ✅
 ```
 
-### Flujo de Datos
+### Barrera #3: Confianza en Fondos
 
 ```
-User (Seller/Buyer)
-  ↓
-Frontend (Next.js)
-  ├→ Create deal form
-  ├→ Upload images (IPFS via Pinata)
-  └→ Accept/complete delivery
-  ↓
-FastAPI Backend
-  ├→ Validate deal
-  ├→ Interact with Smart Contract (escrow)
-  ├→ Trigger GenLayer when needed
-  └→ Invoke PayBot on veredicto
-  ↓
-GenLayer (Python)
-  ├→ Parse images from IPFS
-  ├→ Call Gemini (real vote)
-  ├→ Call Claude (real vote)
-  ├→ Mock votes (3 votes)
-  ├→ Consensus majority
-  └→ Return veredicto
-  ↓
-PayBot Agent (Python + WDK CLI)
-  ├→ Check guardrails (whitelist, caps, limits)
-  ├→ Execute: wdk send --to {winner} --amount {amt} --json
-  ├→ Store audit log in Supabase
-  └→ Return receipt to backend
-  ↓
-Smart Contract (Avalanche)
-  ├→ Escrow locked/unlocked
-  ├→ USDT transferred
-  └→ Events emitted
-  ↓
-Frontend (Update)
-  └→ Show "Payment complete ✓"
+Usuario piensa: "¿Dónde está mi dinero?"
+
+Solución:
+├─ Supabase: Registro auditable
+├─ Blockchain: Smart contract con escrow
+├─ Kapso: Transacción confirmada
+├─ Web: Ver estado en tiempo real
+└─ Notificaciones: Bot confirma cada paso
 ```
 
 ---
 
-## Estructura del Repositorio
+## LA SOLUCIÓN
+
+### Visión General
 
 ```
-verity/
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    USUARIO (Mercado Informal)                            │
+│                                                                           │
+│  Plomero, Taxista, Electricista = SIN WALLET, SIN CRYPTO               │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                ┌─────────────┴──────────────┐
+                │                            │
+        ┌───────▼────────┐         ┌────────▼─────────┐
+        │ TELEGRAM BOT   │         │ WEB DASHBOARD    │
+        │ (Node.js)      │         │ (Next.js)        │
+        │                │         │                  │
+        │ ✅ Crear deal  │         │ ✅ Analytics    │
+        │ ✅ Kapso QR    │         │ ✅ Agents vivo  │
+        │ ✅ Enviar foto │         │ ✅ Retirar $    │
+        │ ✅ Notifs      │         │ ✅ Timeline     │
+        └───────┬────────┘         └────────┬─────────┘
+                │                           │
+                └───────────┬───────────────┘
+                            │
+                    ┌───────▼─────────┐
+                    │ BACKEND         │
+                    │ (FastAPI)       │
+                    │                 │
+                    │ ✅ Routers      │
+                    │ ✅ Services     │
+                    │ ✅ Agents       │
+                    │ ✅ WebSocket    │
+                    └───────┬─────────┘
+                            │
+            ┌───────────────┼───────────────┐
+            │               │               │
+        ┌───▼──┐        ┌──▼───┐      ┌───▼──┐
+        │Kapso │        │Supa  │      │WDK   │
+        │Pagos │        │base  │      │Payout│
+        └──────┘        └──────┘      └──────┘
+```
+
+---
+
+## ARQUITECTURA GENERAL
+
+### Capa 1: Interfaz de Usuario (Entrada)
+
+**TELEGRAM BOT (Node.js)**
+- Conversación natural
+- Kapso QR para pagos
+- Recibir fotos con metadata
+- Notificaciones en tiempo real
+- Botones inline para acciones
+
+**WEB DASHBOARD (Next.js)**
+- Authentication JWT
+- Ver deals en tabla
+- Gráficos de ingresos
+- Arbitration timeline con animación
+- Retirar dinero (Kapso)
+- Editar perfil
+
+### Capa 2: Lógica de Negocio (Backend)
+
+**FASTAPI (Python)**
+
+Routers:
+- `/api/auth/telegram` - Autenticación Telegram
+- `/api/deals/*` - CRUD deals
+- `/api/arbitrage/*` - GenLayer
+- `/api/kapso/*` - Integración Kapso
+- `/api/withdraw/*` - Retiros
+- `/api/analytics/*` - Stats
+
+Services:
+- `deal_service.py` - Lógica de deals
+- `kapso_service.py` - Cliente Kapso
+- `analytics_service.py` - Cálculos
+- `websocket_service.py` - Eventos en vivo
+
+Agents:
+- `genlayer_agent.py` - Gemini + Claude voting
+- `paybot_agent.py` - Pagos automáticos
+- `wdk_cli_wrapper.py` - Subprocess a WDK CLI
+
+### Capa 3: Data Layer
+
+**SUPABASE (PostgreSQL)**
+- users (id, telegram_id, wallet_address, rating)
+- deals (id, seller_id, buyer_id, amount, status, created_at)
+- photos (id, deal_id, ipfs_hash, metadata)
+- payments (id, deal_id, kapso_payment_id, amount, status)
+- arbitration_logs (id, deal_id, agent, decision, confidence)
+- payout_logs (id, deal_id, tx_hash, status)
+- ratings (id, from_user, to_user, score, comment)
+
+**PINATA (IPFS)**
+- Almacenar fotos de deals
+- Metadata: timestamp, GPS, EXIF
+
+**AVALANCHE SEPOLIA (Blockchain)**
+- Deal.sol: Escrow smart contract
+- USDT token address
+
+### Capa 4: Sistemas Externos
+
+**KAPSO**
+- Crear QR de pago
+- Webhook de confirmación
+- Converter PEN → USDT
+
+**WDK CLI**
+- Crear wallets custodiales
+- Enviar USDT a plazos
+- JSON audit trail
+
+**GEMINI & CLAUDE APIs**
+- Analizar fotos + acuerdo
+- Votación mayoritaria
+- Confidencia del veredicto
+
+---
+
+## FLUJO COMPLETO DE TRANSACCIÓN
+
+### PASO 1: Crear Deal (Telegram + Backend)
+
+```
+USUARIO (Telegram):
+Plomero: "/crear_deal"
+Bot: "¿Qué servicio?"
+Plomero: "Reparar baño"
+Bot: "¿Precio?"
+Plomero: "150"
+
+↓ POST /api/deals/create
+
+BACKEND:
+├─ Validar usuario
+├─ Crear deal en Supabase
+├─ Generar deal_id: "deal_abc123"
+├─ Estado: "pending_buyer"
+└─ Emitir WebSocket: "deal_created"
+
+BOT (respuesta):
+"✅ Deal creado por S/150
+🔗 Ver en vivo: verify.app/deals/deal_abc123
+[Botón: Compartir con comprador]"
+
+WEB (dashboard abierto):
+├─ Recibe evento WebSocket
+├─ Tabla se actualiza
+└─ Nueva entrada: "Reparar baño | $150 | Pending"
+```
+
+### PASO 2: Pago (Kapso)
+
+```
+USUARIO (Telegram):
+Bot: "Juan, paga aquí:"
+[Botón: Pagar S/150 con Kapso]
+
+Juan hace click → Abre QR Kapso
+├─ Escanea con su banco
+├─ Ingresa PIN
+└─ Dinero confirmado
+
+↓ KAPSO WEBHOOK → BACKEND
+POST /api/kapso/webhook {
+  "deal_id": "deal_abc123",
+  "amount": 150,
+  "status": "confirmed"
+}
+
+BACKEND:
+├─ Verificar firma Kapso
+├─ Actualizar deal: status="escrowed"
+├─ Guardar payment_id en Supabase
+├─ Emitir WebSocket: "payment_received"
+└─ Trigger: start_arbitration(deal_abc123)
+
+BOT (notifica):
+"✅ Juan pagó S/150
+El dinero está en garantía
+[Botón: Subir fotos del trabajo]"
+
+WEB (en vivo):
+├─ Deal status: "Pending Payment" → "Escrowed"
+├─ Card actualiza
+└─ Empieza timeline: "Esperando fotos..."
+```
+
+### PASO 3: Evidencia (Fotos + Metadata)
+
+```
+USUARIO (Telegram):
+Plomero: [Envía foto del baño reparado]
+
+BOT:
+├─ Recibe foto
+├─ Extrae metadata (timestamp, GPS, EXIF)
+├─ Sube a Pinata
+└─ Notifica backend
+
+↓ POST /api/deals/{id}/upload-photo
+
+BACKEND:
+├─ Guardar IPFS hash
+├─ Guardar metadata
+├─ Emitir WebSocket: "photo_received"
+└─ Trigger: genlayer_agent.start_arbitration()
+
+BOT (notifica):
+"📸 Foto recibida
+GenLayer analizando...
+[Ver en vivo: verify.app/deals/deal_abc123/live]"
+
+WEB (deal detail):
+├─ Foto aparece en galería
+├─ EMPIEZA ANIMACIÓN DE AGENTS
+└─ Timeline: "Arbitration in progress..."
+```
+
+### PASO 4: Arbitraje (GenLayer)
+
+```
+BACKEND (GenLayer Agent):
+
+AGENT 1: Gemini
+├─ Lee deal: "Reparar baño"
+├─ Analiza foto
+├─ Verifica metadata
+├─ Prompt: "¿Se cumplió?"
+└─ Veredicto: "CUMPLIDO ✅" (98% confianza)
+
+AGENT 2: Claude
+├─ Lee deal
+├─ Analiza foto
+├─ Verifica metadata
+├─ Prompt: "¿Calidad OK?"
+└─ Veredicto: "CUMPLIDO ✅" (95% confianza)
+
+CONSENSUS: 2/2 = CUMPLIDO
+└─ Emitir WebSocket: "arbitration_complete"
+
+WEB (ANIMACIÓN EN VIVO):
+┌─────────────────────────────────────┐
+│ GEMINI                              │
+│ [████████████████████████] Complete │
+│ ✅ CUMPLIDO (98%)                   │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│ CLAUDE                              │
+│ [████████████████████████] Complete │
+│ ✅ CUMPLIDO (95%)                   │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│ CONSENSUS                           │
+│ [████████████████████████] Complete │
+│ ✅ APPROVED (2/2)                   │
+└─────────────────────────────────────┘
+
+Proceeding to PayBot...
+```
+
+### PASO 5: Payout (PayBot + WDK)
+
+```
+BACKEND (PayBot Agent):
+
+├─ Verificar arbitration: CUMPLIDO ✓
+├─ Verificar guardrails:
+│  ├─ Plomero en whitelist? ✓
+│  ├─ Monto < $1000? ✓
+│  └─ Daily limit OK? ✓
 │
-├── README.md                          # Este archivo
-├── .env.example                       # Template de variables
-├── .gitignore
+├─ Convertir: S/150 → ~41 USDT
+├─ Ejecutar: wdk send --to plomero --amount 41 --token USDT
+├─ Recibir: tx_hash = "0x1a2b3c..."
+├─ Guardar en Supabase
+└─ Emitir WebSocket: "payout_complete"
+
+WEB (ANIMACIÓN PAYBOT):
+┌─────────────────────────────────────┐
+│ PAYBOT                              │
+│ [████████████████████████] Complete │
+│ TX: 0x1a2b3c...                     │
+│ Amount: 41 USDT                     │
+│ Status: ✅ CONFIRMED                │
+└─────────────────────────────────────┘
+
+BOT (notifica):
+"✅ Arbitraje completado
+✅ Dinero enviado
+
+Plomero recibió: 41 USDT
+Puede retirar a banco vía Kapso
+[Ver en dashboard]"
+
+WEB (final):
+Deal status: "COMPLETED"
+Timeline:
+├─ Created: 2024-08-23 14:00 ✓
+├─ Escrowed: 2024-08-23 14:35 ✓
+├─ Photo: 2024-08-23 15:20 ✓
+├─ Arbitration: 2024-08-23 15:25 ✓
+├─ Payout: 2024-08-23 15:27 ✓
+└─ Rating: Desbloqueado
+
+[Rating Section]:
+Juan: ⭐⭐⭐⭐⭐ "Trabajo excelente"
+Plomero: ⭐⭐⭐⭐⭐ "Pagó sin problemas"
+```
+
+---
+
+## ESTRUCTURA DEL REPOSITORIO
+
+```
+verify-app/
 │
-├── frontend/                          # Next.js 14 + React
+├── 📄 README.md
+├── 📄 .env.example
+├── 📄 .gitignore
+├── 📄 docker-compose.yml
+├── 📄 LICENSE
+│
+├── 🤖 bot/                           ← TELEGRAM BOT (Node.js)
+│   ├── package.json
+│   ├── .env.example
+│   ├── index.js                      ← Entry point
+│   ├── handlers/
+│   │   ├── create_deal.js
+│   │   ├── kapso_payment.js
+│   │   ├─ upload_photo.js
+│   │   ├─ view_dashboard.js
+│   │   └── quick_earnings.js
+│   ├── utils/
+│   │   ├── backend_api.js
+│   │   ├── kapso_integration.js
+│   │   └── format_messages.js
+│   └── middleware/
+│       └── auth.js
+│
+├── 🚀 frontend/                      ← WEB DASHBOARD (Next.js)
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── tailwind.config.js
+│   ├── next.config.js
+│   ├── .env.example
+│   │
 │   ├── app/
 │   │   ├── layout.tsx
-│   │   ├── page.tsx                   # Landing
-│   │   ├── deals/
-│   │   │   ├── page.tsx               # List deals
-│   │   │   ├── create/
-│   │   │   │   └── page.tsx           # Deal creation form
-│   │   │   └── [id]/
-│   │   │       ├── page.tsx           # Deal detail
-│   │   │       └── complete/
-│   │   │           └── page.tsx       # Delivery complete form
-│   │   ├── dashboard/
-│   │   │   └── page.tsx               # User dashboard
-│   │   └── api/
-│   │       └── [...routes]            # Client-side API calls
+│   │   ├── page.tsx                  ← Landing
+│   │   ├── api/                      ← Server-side routes
+│   │   │   ├── auth/
+│   │   │   ├── deals/
+│   │   │   └── withdraw/
+│   │   │
+│   │   └── dashboard/
+│   │       ├── page.tsx              ← Overview
+│   │       ├── deals/
+│   │       │   ├── page.tsx          ← Tabla de deals
+│   │       │   └── [id]/
+│   │       │       ├── page.tsx      ← Deal detail
+│   │       │       └── live.tsx      ← Arbitration animation
+│   │       ├── analytics/
+│   │       │   ├── page.tsx          ← Gráficos
+│   │       │   └── charts.tsx
+│   │       ├── profile/
+│   │       │   └── page.tsx
+│   │       └── withdraw/
+│   │           └── page.tsx
+│   │
 │   ├── components/
-│   │   ├── DealForm.tsx
-│   │   ├── DealCard.tsx
-│   │   ├── StatusBadge.tsx
-│   │   ├── ImageUpload.tsx
-│   │   └── ...
-│   ├── styles/
-│   │   └── globals.css
+│   │   ├── agents/
+│   │   │   ├── AgentAnimation.tsx    ← ⭐ NUEVA
+│   │   │   ├── GeminiAgent.tsx
+│   │   │   ├── ClaudeAgent.tsx
+│   │   │   ├── PayBotAgent.tsx
+│   │   │   └── ArbitrationTimeline.tsx
+│   │   ├── deals/
+│   │   │   ├── DealTable.tsx
+│   │   │   ├── DealCard.tsx
+│   │   │   └── DealDetail.tsx
+│   │   ├── charts/
+│   │   │   ├── IncomeChart.tsx
+│   │   │   └── StatsCard.tsx
+│   │   ├── common/
+│   │   │   ├── Header.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   ├── Loading.tsx
+│   │   │   └── ErrorBoundary.tsx
+│   │   └── layout/
+│   │       └── DashboardLayout.tsx
+│   │
 │   ├── lib/
-│   │   ├── api.ts                     # API client
+│   │   ├── api.ts
+│   │   ├── auth.ts
+│   │   ├── websocket.ts             ← WebSocket client
 │   │   └── utils.ts
-│   ├── package.json
-│   └── tsconfig.json
+│   │
+│   ├── styles/
+│   │   ├── globals.css
+│   │   └── variables.css
+│   │
+│   └── public/
+│       └── (logos, icons)
 │
-├── backend/                           # FastAPI + Python
-│   ├── main.py                        # FastAPI app entry
-│   ├── requirements.txt               # Python dependencies
+├── 🔧 backend/                       ← FASTAPI (Python)
+│   ├── main.py
+│   ├── requirements.txt
 │   ├── .env.example
+│   ├── Dockerfile
 │   │
 │   ├── app/
 │   │   ├── __init__.py
-│   │   ├── config.py                  # Config, env vars
-│   │   ├── models.py                  # Pydantic models
+│   │   ├── config.py
+│   │   ├── models.py
 │   │   │
 │   │   ├── routers/
-│   │   │   ├── deals.py               # POST /deals, GET /deals/{id}
-│   │   │   ├── images.py              # POST /deals/{id}/images
-│   │   │   ├── arbitrage.py           # POST /deals/{id}/arbitrate
-│   │   │   └── payouts.py             # POST /deals/{id}/execute_payout
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py
+│   │   │   ├── deals.py
+│   │   │   ├── arbitrage.py
+│   │   │   ├── kapso.py
+│   │   │   ├── withdraw.py
+│   │   │   ├── analytics.py
+│   │   │   └── websocket.py
 │   │   │
 │   │   ├── services/
-│   │   │   ├── deal_service.py        # Deal logic
-│   │   │   ├── image_service.py       # IPFS upload
-│   │   │   ├── genlayer_service.py    # GenLayer orchestration
-│   │   │   ├── paybot_service.py      # PayBot + WDK CLI integration
-│   │   │   └── blockchain_service.py  # Smart contract interaction
+│   │   │   ├── __init__.py
+│   │   │   ├── deal_service.py
+│   │   │   ├── kapso_service.py
+│   │   │   ├── analytics_service.py
+│   │   │   ├── websocket_service.py
+│   │   │   └── image_service.py
 │   │   │
 │   │   ├── agents/
-│   │   │   ├── paybot_agent.py        # PayBot class
-│   │   │   ├── genlayer_agent.py      # GenLayer voting logic
-│   │   │   └── wdk_cli_wrapper.py     # WDK CLI subprocess caller
+│   │   │   ├── __init__.py
+│   │   │   ├── genlayer_agent.py
+│   │   │   ├── paybot_agent.py
+│   │   │   └── wdk_cli_wrapper.py
 │   │   │
-│   │   └── db/
-│   │       └── supabase_client.py     # Supabase DB operations
+│   │   ├── db/
+│   │   │   ├── __init__.py
+│   │   │   ├── supabase_client.py
+│   │   │   └── models.py
+│   │   │
+│   │   └── utils/
+│   │       ├── decorators.py
+│   │       └── logger.py
 │   │
 │   └── tests/
 │       ├── test_deals.py
-│       ├── test_paybot.py
-│       └── test_genlayer.py
+│       ├── test_arbitrage.py
+│       └── test_paybot.py
 │
-├── contracts/                         # Solidity Smart Contracts
-│   ├── hardhat.config.js              # Hardhat configuration
-│   ├── .env.example
+├── ⛓️  contracts/                     ← SOLIDITY
+│   ├── package.json
+│   ├── hardhat.config.js
 │   │
 │   ├── contracts/
-│   │   ├── Deal.sol                   # Main escrow contract
+│   │   ├── Deal.sol
+│   │   ├── KapsoGateway.sol
 │   │   └── interfaces/
-│   │       └── IERC20.sol             # USDT interface
+│   │       ├── IKapso.sol
+│   │       └── IERC20.sol
 │   │
 │   ├── scripts/
-│   │   ├── deploy.js                  # Deploy Deal.sol to Avalanche
-│   │   └── verify.js                  # Verify on explorer
+│   │   └── deploy.js
 │   │
-│   ├── test/
-│   │   └── Deal.test.js               # Contract tests
-│   │
-│   ├── package.json
-│   └── tsconfig.json
+│   └── test/
+│       └── Deal.test.js
 │
-├── docs/                              # Documentation
-│   ├── ARCHITECTURE.md                # Detailed architecture
-│   ├── API.md                         # API endpoints
-│   ├── DEPLOYMENT.md                  # Deployment guide
-│   ├── WDK_INTEGRATION.md             # WDK CLI usage details
-│   ├── GENLAYER.md                    # GenLayer + LLM voting
-│   ├── USE_CASES.md                   # Detailed use cases
-│   └── DEMO_SCRIPT.md                 # Demo video script
+├── 📚 docs/
+│   ├── README.md
+│   ├── ARCHITECTURE.md
+│   ├── BOT_SETUP.md
+│   ├── WDK_INTEGRATION.md
+│   ├── KAPSO_INTEGRATION.md
+│   ├── API.md
+│   ├── DEMO_SCRIPT.md
+│   └── SETUP.md
 │
-└── docker-compose.yml                 # Local development (optional)
+└── .github/
+    └── workflows/
+        └── ci.yml
 ```
 
 ---
 
-## Stack Tecnológico
+## PLAN DE 26 HORAS
 
-### Frontend
-- **Framework**: Next.js 14 (React 18)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS + shadcn/ui
-- **HTTP Client**: Axios
-- **Blockchain**: wagmi + viem (optional, for wallet display)
-- **Upload**: react-dropzone + Pinata SDK
-- **State**: React hooks + Context API
-- **Deployment**: Vercel
+### HORA 0-3: Setup Inicial (3h)
 
-### Backend
-- **Framework**: FastAPI (Python 3.10+)
-- **Server**: Uvicorn
-- **Language**: Python
-- **Async**: asyncio, aiohttp
-- **Database**: Supabase (PostgreSQL)
-- **AI/LLM**: 
-  - Gemini API (image analysis, voting)
-  - Claude API (voting, analysis)
-  - OpenAI API (optional, voting)
-- **Blockchain**: Web3.py
-- **WDK Integration**: @tetherto/wdk-cli (subprocess)
-- **IPFS**: Pinata SDK
-- **Deployment**: Railway / Render
+```
+TASKS:
+├─ Crear repositorio + estructura carpetas
+├─ Setup Node.js + Python envs
+├─ Crear .env files (plantilla)
+├─ Setup Telegram bot (@BotFather) → obtener token
+├─ Setup Kapso account → obtener API key
+├─ Setup Supabase project → database + auth
+├─ Setup Pinata account → IPFS
+├─ Install dependencies:
+│  ├─ bot: npm install telegrambot axios dotenv
+│  ├─ frontend: npm install next react axios ws
+│  └─ backend: pip install fastapi uvicorn supabase dotenv
+└─ Test: Telegram bot responds to /start
 
-### Blockchain
-- **Network**: Avalanche C-Chain (Sepolia testnet)
-- **Smart Contract Language**: Solidity 0.8.20
-- **Contract Tool**: Hardhat
-- **Token**: USDT (ERC-20 mock)
-- **Libraries**: OpenZeppelin Contracts
+DELIVERABLE: Proyecto listo, dependencias instaladas
+```
 
-### GenLayer (AI Arbitrage)
-- **Primary LLM**: Gemini 1.5 Flash (free tier, $0)
-- **Secondary LLM**: Claude 3.5 Sonnet (~$0.05-0.10 per arbitrage)
-- **Tertiary**: OpenAI GPT-4 (optional, ~$0.30 per arbitrage)
-- **Image Processing**: Vision capabilities of each LLM
-- **Orchestration**: Python asyncio (parallel voting)
+### HORA 3-7: Telegram Bot Base (4h)
 
-### WDK (Track 1 Core)
-- **CLI**: @tetherto/wdk-cli (npm install -g)
-- **SDK**: @tetherto/wdk (Node.js)
-- **Integration**: Python subprocess → CLI invocation
-- **Network**: Avalanche C-Chain + Solana + EVM chains
-- **Output**: JSON (--json flag for auditable receipts)
+```
+TASKS:
+├─ Bot entry point (index.js)
+├─ Handler: /start
+├─ Handler: /crear_deal (conversación multi-step)
+├─ Handler: /mis_deals (list active)
+├─ Handler: /help
+├─ Integración backend_api.js (llamar FastAPI)
+├─ Formateo de mensajes (bonitos, con markdown)
+├─ Botones inline para acciones
+└─ Deploy a Heroku/Railway
 
-### Database
-- **Primary**: Supabase (PostgreSQL)
-- **Tables**: 
-  - deals (id, seller, buyer, amount, status, veredicto)
-  - images (id, deal_id, ipfs_hash, uploaded_by, created_at)
-  - users (id, wallet_address, username, score, created_at)
-  - payouts (id, deal_id, tx_hash, status, amount, recipient)
-  - audit_logs (id, action, agent, timestamp, details)
+TESTS:
+├─ Bot responde a /start
+├─ Conversación /crear_deal funciona
+├─ Bot llama POST /api/deals/create
+└─ Bot recibe respuesta OK
 
-### Infrastructure
-- **Frontend Hosting**: Vercel (automatic deployments from git)
-- **Backend Hosting**: Railway / Render (Docker support)
-- **Database Hosting**: Supabase Cloud
-- **IPFS Gateway**: Pinata
-- **API Rate Limiting**: Built-in (FastAPI)
-- **Monitoring**: Sentry (optional)
+DELIVERABLE: Bot conversacional básico funciona
+```
 
-### Development Tools
-- **Version Control**: Git + GitHub
-- **CI/CD**: GitHub Actions (tests, linting)
-- **Local Dev**: Docker Compose (optional)
-- **Package Manager**: npm (frontend), pip (backend)
-- **Linting**: ESLint (frontend), pylint (backend)
-- **Testing**: Pytest (backend), Jest (frontend)
+### HORA 7-13: Backend Core (6h)
+
+```
+TASKS:
+├─ FastAPI app structure
+├─ Supabase client setup
+├─ Auth router:
+│  └─ POST /api/auth/telegram (crear usuario)
+│
+├─ Deals router:
+│  ├─ POST /api/deals/create
+│  ├─ GET /api/deals/my-deals
+│  ├─ GET /api/deals/{id}
+│  └─ POST /api/deals/{id}/upload-photo
+│
+├─ Kapso service + router:
+│  ├─ POST /api/kapso/create-payment
+│  └─ POST /api/kapso/webhook (recibir confirmación)
+│
+├─ Database models (Supabase tables)
+├─ CORS + JWT validation
+└─ Error handling
+
+TESTS:
+├─ POST /api/deals/create retorna deal_id
+├─ GET /api/deals/my-deals retorna lista
+├─ POST /api/kapso/webhook procesa pago
+└─ Endpoints tienen autenticación
+
+DELIVERABLE: Backend CRUD funciona, Kapso integrado
+```
+
+### HORA 13-19: Frontend Dashboard (6h)
+
+```
+TASKS:
+├─ Layout base (header, sidebar, footer)
+├─ Auth page (login con Telegram JWT)
+├─ Dashboard overview:
+│  ├─ Cards: total ganado, deals, rating
+│  └─ Tabla: deals recientes
+│
+├─ /dashboard/deals:
+│  ├─ Tabla completa con filtros
+│  ├─ Búsqueda
+│  └─ Paginación
+│
+├─ /dashboard/deals/[id]:
+│  ├─ Deal detail
+│  ├─ Foto gallery
+│  └─ WebSocket connection (animación)
+│
+├─ /dashboard/analytics:
+│  ├─ Gráfico línea: ingresos/mes
+│  └─ Gráfico pie: ingresos/categoría
+│
+├─ /profile
+├─ /withdraw (form + confirmación)
+└─ API routes (server-side)
+
+TESTS:
+├─ Dashboard carga datos
+├─ Deal detail muestra fotos
+├─ Gráficos calculan correctamente
+└─ WebSocket conect OK
+
+DELIVERABLE: Dashboard visualiza deals
+```
+
+### HORA 19-22: GenLayer + Animación (3h)
+
+```
+TASKS:
+├─ GenLayer agent (Gemini + Claude)
+├─ Arbitrage router:
+│  └─ POST /api/arbitrage/{id}/start
+│
+├─ WebSocket service:
+│  ├─ Emitir eventos de arbitración
+│  └─ Actualizar clients en tiempo real
+│
+├─ AgentAnimation.tsx:
+│  ├─ Componente Gemini + barra de progreso
+│  ├─ Componente Claude + barra de progreso
+│  ├─ Componente Consensus
+│  ├─ Componente PayBot
+│  └─ Timeline visual
+│
+└─ WebSocket client (lib/websocket.ts)
+
+TESTS:
+├─ GenLayer arbitra correctamente
+├─ WebSocket emite eventos
+├─ Animación actualiza en vivo
+└─ Deal /live muestra agents
+
+DELIVERABLE: Arbitración funciona + animación en web
+```
+
+### HORA 22-24: PayBot + Integración (2h)
+
+```
+TASKS:
+├─ PayBot agent
+├─ WDK CLI wrapper
+├─ Guardrails (whitelist, caps, daily limit)
+├─ Audit logging
+├─ Integration: GenLayer → PayBot
+├─ Payout router:
+│  ├─ POST /withdraw/prepare
+│  └─ POST /withdraw/confirm
+│
+└─ Test end-to-end:
+   ├─ Deal creado
+   ├─ Pagado (Kapso)
+   ├─ Foto enviada
+   ├─ GenLayer arbitra
+   └─ PayBot paga
+
+DELIVERABLE: Transacción completa de principio a fin
+```
+
+### HORA 24-26: Documentación + Demo (2h)
+
+```
+TASKS:
+├─ README.md (completo)
+├─ docs/ARCHITECTURE.md
+├─ docs/BOT_SETUP.md
+├─ docs/KAPSO_INTEGRATION.md
+├─ docs/WDK_INTEGRATION.md
+├─ docs/SETUP.md (cómo correr localmente)
+│
+├─ Video demo (2 minutos):
+│  ├─ Parte 1 (60 seg): Telegram bot
+│  │  ├─ Crear deal
+│  │  ├─ Kapso QR
+│  │  ├─ Enviar foto
+│  │  └─ Pago recibido
+│  │
+│  └─ Parte 2 (60 seg): Web dashboard
+│     ├─ Deal aparece en tabla
+│     ├─ Animación agents
+│     ├─ Payout confirmado
+│     └─ Rating
+
+└─ Checklist submission WDK Track 1A
+
+DELIVERABLE: Proyecto completo + documentación + video
+```
+
+### BUFFER (0-2 horas)
+
+```
+├─ Bugs last-minute
+├─ Pulido UI/UX
+├─ Testing edge cases
+└─ Checklist de submission
+```
 
 ---
 
-## Casos de Uso
+## ESPECIFICACIONES TÉCNICAS
 
-### 1. Compra de iPhone ($300)
+### Variables de Ambiente
 
-**Actores**: Juana (vendedora), Carlos (comprador)
+**Frontend (.env.local)**
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+NEXT_PUBLIC_KAPSO_MERCHANT_ID=your_merchant_id
+```
 
-**Flujo**:
-1. Juana crea deal: "iPhone 13, 256GB, buena condición, $300"
-2. Carlos acepta y deposita $300 en escrow
-3. Juana envía el teléfono
-4. Carlos recibe y sube 3 fotos: teléfono encendido, pantalla, batería
-5. GenLayer analiza: "¿Funciona? ¿Pantalla OK? ¿Batería OK?" → 5 LLMs votan → 5/5 CUMPLIDO
-6. PayBot (WDK CLI) detecta veredicto → paga $300 a Juana automáticamente
-7. Ambos reciben score 5/5 on-chain
+**Backend (.env)**
+```
+FASTAPI_ENV=development
+DATABASE_URL=postgresql://user:pass@localhost/verify
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_KEY=xxxxxx
 
-**Duración**: Deal completo en 2-3 horas, arbitraje en 15 minutos
+KAPSO_API_KEY=your_kapso_key
+KAPSO_MERCHANT_ID=your_merchant_id
+
+GEMINI_API_KEY=your_gemini_key
+CLAUDE_API_KEY=your_claude_key
+
+WDK_CLI_PATH=/usr/local/bin/wdk
+AVALANCHE_RPC_URL=https://api.avax-test.network/ext/bc/C/rpc
+AVALANCHE_PRIVATE_KEY=your_key
+
+PINATA_API_KEY=your_pinata_key
+PINATA_API_SECRET=your_secret
+
+JWT_SECRET=your_jwt_secret
+TELEGRAM_BOT_TOKEN=your_bot_token
+
+CORS_ORIGINS=http://localhost:3000,http://localhost:8000
+```
+
+**Bot (.env)**
+```
+TELEGRAM_BOT_TOKEN=your_bot_token
+BACKEND_URL=http://localhost:8000
+KAPSO_MERCHANT_ID=your_merchant_id
+NODE_ENV=development
+```
+
+### Modelo de Datos (Supabase)
+
+**users**
+```sql
+id UUID PRIMARY KEY
+telegram_id BIGINT UNIQUE
+telegram_username VARCHAR
+wallet_address VARCHAR
+phone_number VARCHAR
+display_name VARCHAR
+profile_photo_url VARCHAR
+rating FLOAT (0-5)
+deal_count INT
+created_at TIMESTAMP
+updated_at TIMESTAMP
+```
+
+**deals**
+```sql
+id UUID PRIMARY KEY
+seller_id UUID (FK users)
+buyer_id UUID (FK users)
+service_description TEXT
+amount_pen FLOAT (monto en soles)
+amount_usdt FLOAT (convertido)
+status VARCHAR (pending_buyer, escrowed, arbitrating, completed, disputed)
+created_at TIMESTAMP
+updated_at TIMESTAMP
+completed_at TIMESTAMP
+smart_contract_address VARCHAR
+```
+
+**photos**
+```sql
+id UUID PRIMARY KEY
+deal_id UUID (FK deals)
+uploaded_by UUID (FK users)
+ipfs_hash VARCHAR
+metadata JSON (timestamp, gps, exif)
+uploaded_at TIMESTAMP
+```
+
+**payments**
+```sql
+id UUID PRIMARY KEY
+deal_id UUID (FK deals)
+kapso_payment_id VARCHAR
+amount_pen FLOAT
+currency VARCHAR (PEN)
+status VARCHAR (pending, confirmed, failed)
+webhook_received_at TIMESTAMP
+confirmed_at TIMESTAMP
+created_at TIMESTAMP
+```
+
+**arbitration_logs**
+```sql
+id UUID PRIMARY KEY
+deal_id UUID (FK deals)
+agent_name VARCHAR (gemini, claude, consensus, paybot)
+status VARCHAR (processing, complete)
+progress INT (0-100)
+decision VARCHAR (CUMPLIDO, INCUMPLIDO, PARTIAL)
+confidence INT (0-100)
+reasoning TEXT
+started_at TIMESTAMP
+completed_at TIMESTAMP
+```
+
+**payout_logs**
+```sql
+id UUID PRIMARY KEY
+deal_id UUID (FK deals)
+tx_hash VARCHAR
+amount_usdt FLOAT
+recipient_wallet VARCHAR
+status VARCHAR (pending, confirmed, failed)
+error_message TEXT
+created_at TIMESTAMP
+confirmed_at TIMESTAMP
+```
 
 ---
 
-### 2. Caución de Alquiler ($1,000, 12 meses)
+## API ENDPOINTS
 
-**Actores**: Arrendador, Inquilino
+### Authentication
 
-**Flujo**:
-1. Arrendador crea deal: "Caución departamento 3 habitaciones, $1,000, 365 días"
-2. Inquilino deposita $1,000 en escrow (bloqueado 12 meses)
-3. Inquilino vive en apartamento
-4. Día 365: Inquilino se muda y sube fotos estado final
-5. GenLayer analiza: "¿Daño normal o destructivo?" → calcula % → "90% normal, 10% destructivo"
-6. PayBot (WDK CLI) ejecuta doble payout:
-   - $900 → Inquilino
-   - $100 → Arrendador
-7. Ambos reciben score proporcional
+```
+POST /api/auth/telegram
+Body: { telegram_id, telegram_username, phone_number }
+Response: { token, user_id, created: true/false }
 
-**Ventaja**: Sin juicio, sin abogado, en 20 minutos
+Errors:
+  400 - Invalid telegram_id
+  500 - Database error
+```
+
+### Deals
+
+```
+POST /api/deals/create
+Body: { service, amount_pen, description }
+Response: { deal_id, status, share_link }
+
+GET /api/deals/my-deals
+Query: ?status=active&sort=created_at&limit=10
+Response: [{ id, service, amount, status, created_at }, ...]
+
+GET /api/deals/{id}
+Response: {
+  id, seller, buyer, service, amount,
+  status, photos: [], payments: [],
+  arbitration: {}, payout: {}
+}
+
+POST /api/deals/{id}/upload-photo
+Body: FormData(photo, metadata)
+Response: { ipfs_hash, metadata_saved: true }
+
+POST /api/deals/{id}/accept
+Body: {}
+Response: { deal_id, status: "escrowed" }
+```
+
+### Kapso
+
+```
+POST /api/kapso/create-payment
+Body: { deal_id, amount, user_phone }
+Response: { payment_url, kapso_payment_id }
+
+POST /api/kapso/webhook (Kapso llama a esto)
+Body: { deal_id, amount, status, payment_id, timestamp }
+Response: { ok }
+  (Backend procesa y emite eventos)
+
+GET /api/kapso/payment-status/{payment_id}
+Response: { status, amount, confirmed_at }
+```
+
+### Arbitrage
+
+```
+POST /api/arbitrage/{id}/start
+Body: {}
+Response: { deal_id, arbitration_id, status: "processing" }
+
+GET /api/arbitrage/{id}/status
+Response: {
+  arbitration_id,
+  agents: {
+    gemini: { progress, status, decision, confidence },
+    claude: { progress, status, decision, confidence }
+  },
+  consensus: { status, verdict, votes }
+}
+
+WebSocket: /ws/arbitrage/{id}
+Emits every 2 sec:
+{
+  type: "arbitration_progress",
+  agents: {...},
+  consensus: {...}
+}
+```
+
+### Analytics
+
+```
+GET /api/analytics/earnings
+Query: ?period=month (month|year|all)
+Response: {
+  total: 450.50,
+  deals_count: 3,
+  avg_per_deal: 150.17,
+  data: [{ month, earnings }, ...]
+}
+
+GET /api/analytics/stats
+Response: {
+  total_earned: 450.50,
+  deals_completed: 3,
+  rating: 4.8,
+  success_rate: 100,
+  avg_time_to_payout: 25 (min)
+}
+
+GET /api/analytics/timeline
+Response: [
+  { date, event, amount, status },
+  ...
+]
+```
+
+### Withdraw
+
+```
+POST /api/withdraw/prepare
+Body: { amount, method (kapso|internal), account_info }
+Response: { withdraw_id, amount, method, 2fa_required: true }
+
+POST /api/withdraw/confirm
+Body: { withdraw_id, 2fa_code }
+Response: { status: "processing", tx_hash }
+
+GET /api/withdraw/status/{withdraw_id}
+Response: { status, amount, confirmed_at }
+```
 
 ---
 
-### 3. Servicios (Tutoría, $50/clase)
+## COMPONENTES PRINCIPALES
 
-**Actores**: Carlos (tutor), Ana (estudiante)
+### 1. Telegram Bot Handlers
 
-**Flujo**:
-1. Carlos crea deal: "1 hora clase Matemáticas, $50"
-2. Ana deposita $50
-3. Clase sucede en Zoom (fuera de app)
-4. Ana sube foto: pizarra con ejercicios resueltos
-5. GenLayer: "¿Ejercicios correctos? ¿Explicación clara?" → 5/5 CUMPLIDO
-6. PayBot → $50 a Carlos automáticamente
-7. Puede repetirse cada semana (4 deals/mes, 4 pagos automáticos)
+**create_deal.js**
+- Conversación: Servicio → Precio → Descripción
+- Guardar en backend
+- Enviar link para compartir
+
+**kapso_payment.js**
+- Generar QR Kapso
+- Enviar botón de pago
+- Esperar confirmación webhook
+
+**upload_photo.js**
+- Recibir foto
+- Extraer metadata (EXIF, GPS)
+- Subir a Pinata
+- Notificar backend
+
+**view_dashboard.js**
+- Enviar link: verify.app/deals/{id}
+- Ver animación agents en vivo
+
+### 2. Frontend Components
+
+**AgentAnimation.tsx**
+```jsx
+<AgentCard
+  name="Gemini"
+  progress={45}
+  status="Analyzing photos..."
+  eta={8}
+/>
+
+<AgentCard
+  name="Claude"
+  progress={25}
+  status="Processing metadata..."
+  eta={12}
+/>
+
+<ConsensusBox
+  votes_received={1}
+  votes_needed={2}
+  verdict={null}
+/>
+
+<PayBotCard
+  status="Waiting for consensus"
+  ready={false}
+/>
+```
+
+**DealTable.tsx**
+- Tabla con deals
+- Filtros (status, fecha)
+- Link a detail page
+
+**DealDetail.tsx**
+- Información del deal
+- Galería de fotos
+- WebSocket connection para animación en vivo
+- Rating section
+
+### 3. Backend Services
+
+**deal_service.py**
+- CRUD deals
+- Update status
+- Guardar fotos
+
+**kapso_service.py**
+- Cliente Kapso API
+- Crear payment links
+- Verificar webhooks
+
+**genlayer_agent.py**
+- Llamar Gemini API
+- Llamar Claude API
+- Implementar votación
+- Emitir eventos WebSocket
+
+**paybot_agent.py**
+- Verificar guardrails
+- Ejecutar WDK CLI
+- Guardar transaction hash
+- Audit logging
 
 ---
 
-### 4. Freelance (Desarrollo Web, $2,000)
+## SETUP INICIAL
 
-**Actores**: Dev (Chile), Cliente (Perú)
-
-**Flujo**:
-1. Dev crea deal: "Sitio 5 páginas responsive, $2,000"
-2. Cliente deposita $2,000
-3. Dev desarrolla 2 semanas
-4. Dev entrega: GitHub repo + URL viva + screenshot responsive
-5. GenLayer: "¿Funciona? ¿Responsive? ¿Rápido?" → accede URLs, valida → 5/5 CUMPLIDO
-6. PayBot → $2,000 a Dev instantáneamente (sin esperar 30 días)
-
-**Ventaja**: Dev no pierde dinero, Cliente garantiza calidad
-
----
-
-## Getting Started
-
-### Requisitos previos
-- Node.js 18+
-- Python 3.10+
-- Git
-- API keys:
-  - Gemini API (free)
-  - Claude API (paid, ~$0.05-0.10 per demo)
-  - Supabase account (free tier)
-  - Pinata account (free tier)
-
-### Setup local (5 minutos)
+### Prerequisitos
 
 ```bash
-# 1. Clonar repo
-git clone https://github.com/tu-usuario/trustlayer-paybot.git
-cd trustlayer-paybot
+- Node.js 18+ (bot + frontend)
+- Python 3.10+ (backend)
+- PostgreSQL (Supabase)
+- Git
+- Docker (opcional)
+```
 
-# 2. Setup environment
-cp .env.example .env.local
-# Editar .env.local con tus keys
+### Paso 1: Clonar y Setup Base
 
-# 3. Frontend
+```bash
+git clone <repo>
+cd verify-app
+
+# Crear estructura
+mkdir -p bot frontend backend contracts docs
+
+# Install bot
+cd bot
+npm init -y
+npm install telegrambot axios dotenv ws
+cd ..
+
+# Install frontend
 cd frontend
-npm install
-npm run dev
-# Abre http://localhost:3000
+npx create-next-app@latest . --typescript
+npm install axios ws ws
+cd ..
 
-# 4. Backend (en otra terminal)
+# Install backend
 cd backend
 python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python -m uvicorn main:app --reload
-# Abre http://localhost:8000/docs
-
-# 5. Smart Contract (en otra terminal)
-cd contracts
-npm install
-npx hardhat compile
-npx hardhat run scripts/deploy.js --network avalanche-sepolia
-# Guarda el DEAL_CONTRACT_ADDRESS en .env
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install fastapi uvicorn python-dotenv supabase websockets
+cd ..
 ```
 
-### Verificar que todo funciona
+### Paso 2: Configurar Variables
 
 ```bash
-# Test frontend
-curl http://localhost:3000
+# Copy .env templates
+cp .env.example .env
+cp bot/.env.example bot/.env
+cp frontend/.env.example frontend/.env.local
+cp backend/.env.example backend/.env
 
-# Test backend
+# Editar con tus keys
+# - Telegram Bot Token (@BotFather)
+# - Kapso credentials
+# - Supabase URL + keys
+# - Gemini + Claude API keys
+# - WDK CLI path
+```
+
+### Paso 3: Setup Supabase
+
+```bash
+# Crear project en supabase.com
+# Copiar URL y keys a .env
+
+# Ejecutar migrations (crear tablas)
+# Ver scripts en docs/supabase-migrations.sql
+```
+
+### Paso 4: Deploy Telegram Bot
+
+```bash
+cd bot
+npm start
+
+# Esperar a que esté listo
+# Probar: @tu_bot_name /start
+```
+
+### Paso 5: Correr Backend
+
+```bash
+cd backend
+source venv/bin/activate
+python main.py
+
+# Debe estar en http://localhost:8000
+# Verificar: curl http://localhost:8000/health
+```
+
+### Paso 6: Correr Frontend
+
+```bash
+cd frontend
+npm run dev
+
+# Debe estar en http://localhost:3000
+```
+
+### Verificación
+
+```bash
+# Bot
 curl http://localhost:8000/health
 
-# Test WDK CLI (desde terminal)
-wdk wallet create --json
+# Frontend
+open http://localhost:3000
+
+# API
+curl http://localhost:8000/api/deals/my-deals
+  (Debe retornar error 401 si no estás autenticado - OK)
 ```
 
 ---
 
-## Roadmap
+## TESTING & DEPLOYMENT
 
-### MVP (Hackathon Aleph, 22-23 Agosto 2026)
-- ✅ Verity core (create deal, escrow, arbitrage)
-- ✅ PayBot + WDK CLI integration
-- ✅ GenLayer with Gemini + Claude + mocks
-- ✅ Frontend basic (form, dashboard, results)
-- ✅ Demo video (90 seg, 2 casos)
+### Testing Local
 
-### V1 (Post-hackathon, Sep 2026)
-- [ ] Deploy to mainnet (Avalanche C-Chain)
-- [ ] Mobile app (React Native)
-- [ ] Email/SMS notifications
-- [ ] Dispute resolution (community voting)
-- [ ] Payment method options (credit card, bank transfer)
+```bash
+# Bot
+curl -X POST http://localhost:8000/api/deals/create \
+  -H "Content-Type: application/json" \
+  -d '{"service": "Test", "amount": 100}'
 
-### V2 (Q4 2026)
-- [ ] Multi-language (Spanish, Portuguese)
-- [ ] Regional expansion (Colombia, Argentina, México)
-- [ ] Insurance integration (smart contract coverage)
-- [ ] Subscription payouts (recurring deals)
-- [ ] API for marketplaces (OLX, Mercado Libre)
+# Frontend
+Go to http://localhost:3000/dashboard
+(Should show empty deals table)
 
-### V3 (2027+)
-- [ ] Cross-chain bridges (Polygon, Arbitrum, Solana)
-- [ ] DAO governance (community votes on arbitrage)
-- [ ] Tokenomics (rewards for good actors)
-- [ ] Institutional deals (B2B escrow)
+# Arbitrage (mock)
+curl -X POST http://localhost:8000/api/arbitrage/deal_test_id/start
+
+# WebSocket
+wscat -c ws://localhost:8000/ws
+```
+
+### Pre-Deployment Checklist
+
+```
+Backend:
+✓ All endpoints return 200/201/400 as expected
+✓ JWT validation works
+✓ Kapso webhook signature verified
+✓ GenLayer agents respond
+✓ WDK CLI wrapper works
+✓ Supabase connections OK
+✓ Error logging works
+
+Frontend:
+✓ Dashboard loads
+✓ Deal table updates with WebSocket
+✓ AgentAnimation displays correctly
+✓ Auth redirects to login
+✓ Responsive on mobile
+
+Bot:
+✓ /start works
+✓ /crear_deal conversation complete
+✓ Kapso QR generates
+✓ Photo upload works
+✓ Notifications send
+
+Blockchain:
+✓ Deal.sol compiles
+✓ Deployed to Avalanche Sepolia
+✓ USDT transfers work
+```
+
+### Deployment
+
+**Backend (Railway/Render)**
+```bash
+git push origin main
+# CI/CD triggers deployment automatically
+```
+
+**Frontend (Vercel)**
+```bash
+npm run build
+vercel deploy
+```
+
+**Bot (Heroku/Railway)**
+```bash
+git push heroku main
+heroku logs -t
+```
 
 ---
 
-## Contribuciones
+## NOTAS IMPORTANTES
 
-Contributions welcome! Por favor:
-1. Fork el repo
-2. Crea una branch (`git checkout -b feature/amazing-feature`)
-3. Commit tus cambios (`git commit -m 'Add amazing feature'`)
-4. Push a la branch (`git push origin feature/amazing-feature`)
-5. Abre un Pull Request
+### Seguridad
 
----
+- ✅ JWT tokens válidos 30 días
+- ✅ Refresh tokens en httpOnly cookies
+- ✅ Kapso webhooks verificados con firma
+- ✅ WDK private keys nunca en logs
+- ✅ Rate limiting en endpoints públicos
+- ✅ CORS restringido
 
-## Licencia
+### Performance
 
-MIT License - See `LICENSE` file for details
+- ✅ WebSocket para actualizaciones en vivo (no polling)
+- ✅ Caching de datos estáticos
+- ✅ Índices en Supabase para queries frecuentes
+- ✅ Compresión de imágenes antes de IPFS
 
----
+### Escalabilidad
 
-## Contacto
-
-- **Email**: team@trustlayer.io
-- **Twitter**: [@TrustLayerIO](https://twitter.com/trustlayerio)
-- **Discord**: [Join our community](https://discord.gg/trustlayer)
-- **Docs**: https://docs.trustlayer.io
-
----
-
-## Agradecimientos
-
-- **Tether** (WDK Track sponsor)
-- **Aleph Hackathon** 
+- ✅ Backend stateless (puede escalar horizontalmente)
+- ✅ Bot stateless (webhook-driven)
+- ✅ WebSocket con Redis (para múltiples instancias)
+- ✅ Database con connection pooling
 
 ---
 
-**Built with ❤️ for trust in Latam**
+## REFERENCIAS RÁPIDAS
 
-*Last updated: August 22, 2026*
+### Docs Externas
+
+- Telegram Bot API: https://core.telegram.org/bots/api
+- FastAPI: https://fastapi.tiangolo.com
+- Next.js: https://nextjs.org/docs
+- Solidity: https://docs.soliditylang.org
+- Supabase: https://supabase.com/docs
+- WDK Docs: https://docs.wdk.tether.io
+
+### Test Data (Para mockear)
+
+**Deal Mock**
+```json
+{
+  "id": "deal_abc123",
+  "service": "Reparar baño",
+  "amount": 150,
+  "status": "pending_buyer",
+  "seller": "plomero_juan",
+  "buyer": "cliente_test"
+}
+```
+
+**Photo Mock**
+```json
+{
+  "ipfs_hash": "QmXxxx...",
+  "timestamp": "2024-08-23T15:20:00Z",
+  "gps": { "lat": -12.0462, "lon": -77.0371 },
+  "device": "iPhone 14 Pro"
+}
+```
+
+---
