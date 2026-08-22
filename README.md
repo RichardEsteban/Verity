@@ -228,203 +228,6 @@ Agents:
 
 ## FLUJO COMPLETO DE TRANSACCIÓN
 
-### Caso de Uso A: Servicio Pequeño (S/150 — pago único)
-
-Un plomero repara un baño. Pago único, escrow simple, un solo ciclo de arbitraje.
-
-### PASO 1: Crear Deal (Telegram + Backend)
-
-```
-USUARIO (Telegram):
-Plomero: "/crear_deal"
-Bot: "¿Qué servicio?"
-Plomero: "Reparar baño"
-Bot: "¿Precio?"
-Plomero: "150"
-
-↓ POST /api/deals/create
-
-BACKEND:
-├─ Validar usuario
-├─ Crear deal en Supabase
-├─ Generar deal_id: "deal_abc123"
-├─ Estado: "pending_buyer"
-└─ Emitir WebSocket: "deal_created"
-
-BOT (respuesta):
-"✅ Deal creado por S/150
-🔗 Ver en vivo: verify.app/deals/deal_abc123
-[Botón: Compartir con comprador]"
-
-WEB (dashboard abierto):
-├─ Recibe evento WebSocket
-├─ Tabla se actualiza
-└─ Nueva entrada: "Reparar baño | $150 | Pending"
-```
-
-### PASO 2: Pago (Kapso)
-
-```
-USUARIO (Telegram):
-Bot: "Juan, paga aquí:"
-[Botón: Pagar S/150 con Kapso]
-
-Juan hace click → Abre QR Kapso
-├─ Escanea con su banco
-├─ Ingresa PIN
-└─ Dinero confirmado
-
-↓ KAPSO WEBHOOK → BACKEND
-POST /api/kapso/webhook {
-  "deal_id": "deal_abc123",
-  "amount": 150,
-  "status": "confirmed"
-}
-
-BACKEND:
-├─ Verificar firma Kapso
-├─ Actualizar deal: status="escrowed"
-├─ Guardar payment_id en Supabase
-├─ Emitir WebSocket: "payment_received"
-└─ Trigger: start_arbitration(deal_abc123)
-
-BOT (notifica):
-"✅ Juan pagó S/150
-El dinero está en garantía
-[Botón: Subir fotos del trabajo]"
-
-WEB (en vivo):
-├─ Deal status: "Pending Payment" → "Escrowed"
-├─ Card actualiza
-└─ Empieza timeline: "Esperando fotos..."
-```
-
-### PASO 3: Evidencia (Fotos + Metadata)
-
-```
-USUARIO (Telegram):
-Plomero: [Envía foto del baño reparado]
-
-BOT:
-├─ Recibe foto
-├─ Extrae metadata (timestamp, GPS, EXIF)
-├─ Sube a Pinata
-└─ Notifica backend
-
-↓ POST /api/deals/{id}/upload-photo
-
-BACKEND:
-├─ Guardar IPFS hash
-├─ Guardar metadata
-├─ Emitir WebSocket: "photo_received"
-└─ Trigger: genlayer_agent.start_arbitration()
-
-BOT (notifica):
-"📸 Foto recibida
-GenLayer analizando...
-[Ver en vivo: verify.app/deals/deal_abc123/live]"
-
-WEB (deal detail):
-├─ Foto aparece en galería
-├─ EMPIEZA ANIMACIÓN DE AGENTS
-└─ Timeline: "Arbitration in progress..."
-```
-
-### PASO 4: Arbitraje (GenLayer)
-
-```
-BACKEND (GenLayer Agent):
-
-AGENT 1: Gemini
-├─ Lee deal: "Reparar baño"
-├─ Analiza foto
-├─ Verifica metadata
-├─ Prompt: "¿Se cumplió?"
-└─ Veredicto: "CUMPLIDO ✅" (98% confianza)
-
-AGENT 2: Claude
-├─ Lee deal
-├─ Analiza foto
-├─ Verifica metadata
-├─ Prompt: "¿Calidad OK?"
-└─ Veredicto: "CUMPLIDO ✅" (95% confianza)
-
-CONSENSUS: 2/2 = CUMPLIDO
-└─ Emitir WebSocket: "arbitration_complete"
-
-WEB (ANIMACIÓN EN VIVO):
-┌─────────────────────────────────────┐
-│ GEMINI                              │
-│ [████████████████████████] Complete │
-│ ✅ CUMPLIDO (98%)                   │
-└─────────────────────────────────────┘
-
-┌─────────────────────────────────────┐
-│ CLAUDE                              │
-│ [████████████████████████] Complete │
-│ ✅ CUMPLIDO (95%)                   │
-└─────────────────────────────────────┘
-
-┌─────────────────────────────────────┐
-│ CONSENSUS                           │
-│ [████████████████████████] Complete │
-│ ✅ APPROVED (2/2)                   │
-└─────────────────────────────────────┘
-
-Proceeding to PayBot...
-```
-
-### PASO 5: Payout (PayBot + WDK)
-
-```
-BACKEND (PayBot Agent):
-
-├─ Verificar arbitration: CUMPLIDO ✓
-├─ Verificar guardrails:
-│  ├─ Plomero en whitelist? ✓
-│  ├─ Monto < $1000? ✓
-│  └─ Daily limit OK? ✓
-│
-├─ Convertir: S/150 → ~41 USDT
-├─ Ejecutar: wdk send --to plomero --amount 41 --token USDT
-├─ Recibir: tx_hash = "0x1a2b3c..."
-├─ Guardar en Supabase
-└─ Emitir WebSocket: "payout_complete"
-
-WEB (ANIMACIÓN PAYBOT):
-┌─────────────────────────────────────┐
-│ PAYBOT                              │
-│ [████████████████████████] Complete │
-│ TX: 0x1a2b3c...                     │
-│ Amount: 41 USDT                     │
-│ Status: ✅ CONFIRMED                │
-└─────────────────────────────────────┘
-
-BOT (notifica):
-"✅ Arbitraje completado
-✅ Dinero enviado
-
-Plomero recibió: 41 USDT
-Puede retirar a banco vía Kapso
-[Ver en dashboard]"
-
-WEB (final):
-Deal status: "COMPLETED"
-Timeline:
-├─ Created: 2024-08-23 14:00 ✓
-├─ Escrowed: 2024-08-23 14:35 ✓
-├─ Photo: 2024-08-23 15:20 ✓
-├─ Arbitration: 2024-08-23 15:25 ✓
-├─ Payout: 2024-08-23 15:27 ✓
-└─ Rating: Desbloqueado
-
-[Rating Section]:
-Juan: ⭐⭐⭐⭐⭐ "Trabajo excelente"
-Plomero: ⭐⭐⭐⭐⭐ "Pagó sin problemas"
-```
-
----
-
 ### Caso de Uso B: Proyecto Grande con Pagos por Hitos (S/12,000 — remodelación completa)
 
 Una empresa constructora remodela una cocina completa para un cliente. El monto ya no cabe en
@@ -544,18 +347,182 @@ Cliente: ⭐⭐⭐⭐⭐ "Proyecto grande, cero fricción en pagos por etapa"
 Constructora: ⭐⭐⭐⭐⭐ "Cobré cada avance sin perseguir al cliente"
 ```
 
-#### Diferencias clave vs. Caso A (tabla)
+### Caso de Uso C: Depósito de Garantía Airbnb-style (S/800 — flujo completo desde el contrato)
+
+A diferencia de A y B, aquí el dinero **no fluye en una sola dirección**. El huésped deposita
+una garantía completa ANTES de la estadía, y el contrato debe resolver DESPUÉS si ese dinero
+vuelve 100% al huésped, se queda 100% con el anfitrión, o se **divide** entre reparación y
+devolución. El flujo completo pasa por el smart contract desde la creación del depósito, no
+solo por el cálculo final del excedente.
 
 ```
-                        CASO A (S/150)          CASO B (S/12,000)
-Pagos                   1 pago único            3 pagos por hito
-Escrow                  Todo de una vez         Parcial, por hito
-Evidencia               1 set de fotos          1 set de fotos por hito
-Arbitraje               1 ciclo GenLayer         3 ciclos GenLayer (uno por hito)
-Confidence requerido    Mayoría simple           ≥95% en ambos agentes
-Revisión manual         No aplica                Opcional si confidence < 95%
-Payout                  1 transacción WDK        3 transacciones WDK (tramos)
-Auditoría               payout_logs              payout_logs + high_value_audit_logs
+DEAL: "Depósito de garantía — Departamento Miraflores"
+TIPO: deposit (no service)
+MONTO DEPÓSITO: S/800 (~216 USDT), bloqueado ANTES del check-in
+POSIBLES DESENLACES: reembolso total | reembolso parcial + reparación | sin reembolso
+```
+
+#### PASO 0: Reserva y Creación del Contrato de Depósito (Telegram + Backend + Deal.sol)
+
+```
+USUARIO (Telegram):
+Huésped: "/reservar Depto Miraflores"
+Bot: "Fechas de estadía?"
+Huésped: "28 ago - 31 ago"
+Bot: "Depósito de garantía requerido: S/800 (reembolsable)"
+
+↓ POST /api/deals/create { type: "deposit", checkin, checkout }
+
+BACKEND:
+├─ Crear deal: "deal_deposit_456" (deal_type: "deposit")
+├─ Estado: "awaiting_deposit"
+└─ Llamar smart contract:
+   Deal.sol.createDeposit(host, guest, amount=800, checkin, checkout)
+   ├─ Deploya instancia de escrow para este deal (aún sin fondos)
+   └─ Retorna: contract_address = "0xAb12..."
+
+BOT (respuesta):
+"✅ Reserva creada. Paga el depósito de garantía para confirmar:
+[Botón: Pagar S/800 con Kapso]
+El depósito se libera automáticamente al checkout si no hay daños."
+```
+
+#### PASO 1: Huésped Paga el Depósito → Escrow On-Chain (Kapso → KapsoGateway.sol → Deal.sol)
+
+```
+Huésped paga S/800 vía Kapso QR (igual que Caso A/B)
+
+↓ KAPSO WEBHOOK → BACKEND
+POST /api/kapso/webhook { deal_id: "deal_deposit_456", amount: 800, status: "confirmed" }
+
+BACKEND:
+├─ Verificar firma Kapso
+├─ Llamar KapsoGateway.sol.convertAndForward(800, "PEN")
+│  └─ Convierte S/800 → 216 USDT
+├─ Llamar Deal.sol.lockDeposit(deal_deposit_456, 216 USDT)
+│  └─ Fondos AHORA en escrow on-chain (no en Kapso, no en Supabase — en el contrato)
+├─ Actualizar deal: status="deposit_locked"
+└─ Emitir WebSocket: "deposit_locked"
+
+BOT (notifica a ambos):
+Huésped: "✅ Depósito de S/800 congelado en garantía. Disfruta tu estadía."
+Anfitrión: "✅ Huésped confirmado. Depósito de garantía asegurado on-chain."
+
+WEB (deal detail):
+Estado: "🔒 Depósito bloqueado — 216 USDT en contrato 0xAb12..."
+```
+
+#### PASO 2: Estadía (Check-in → Check-out)
+
+```
+Día de check-in:
+Bot: "Bienvenido. Anfitrión puede subir fotos del estado inicial (opcional)."
+Deal status: "in_stay"
+
+Día de check-out:
+Bot (a ambos): "Estadía finalizada. Ventana de reporte de daños: 24h."
+Deal status: "review_window"
+```
+
+#### PASO 3: Ventana de Reporte — Dos Ramas
+
+```
+RAMA A — Sin daños reportados en 24h:
+├─ Anfitrión no reporta nada, o confirma "Todo OK"
+├─ Trigger automático (cron backend): Deal.sol.refundFull(guest)
+├─ Los 216 USDT completos vuelven al huésped
+├─ Deal status: "completed_no_damage"
+└─ Bot: "✅ Sin incidencias. Tus S/800 fueron devueltos íntegros."
+
+RAMA B — Anfitrión reporta daños dentro de la ventana:
+├─ Anfitrión: [Envía fotos antes/después] + "Costo estimado: S/300"
+├─ Backend sube fotos a Pinata, guarda claim
+├─ Deal status: "disputed"
+└─ Trigger: genlayer_agent.start_arbitration() (con foco en daños, no en "cumplido/no cumplido")
+```
+
+#### PASO 4: Arbitraje de Daños (GenLayer) — a diferencia de A/B, no es binario
+
+```
+BACKEND (GenLayer Agent) — Rama B:
+
+AGENT 1: Gemini
+├─ Compara fotos "antes" vs "después"
+├─ Evalúa el claim de S/300 contra el daño visible
+└─ Veredicto: "Daño real ≈ S/220 (73% del reclamo)" (92% confianza)
+
+AGENT 2: Claude
+├─ Mismo análisis, independiente
+└─ Veredicto: "Daño real ≈ S/220" (90% confianza)
+
+CONSENSUS: 2/2 coinciden en monto → S/220 justificado (no los S/300 reclamados)
+├─ repair_amount = S/220 (para el anfitrión)
+├─ refund_amount = S/580 (excedente, de vuelta al huésped)
+└─ Emitir WebSocket: "arbitration_complete" (con split)
+
+WEB (ANIMACIÓN EN VIVO):
+┌─────────────────────────────────────┐
+│ CONSENSUS — Evaluación de daño       │
+│ [████████████████████████] Complete │
+│ Reclamado: S/300 | Aprobado: S/220   │
+│ Split: Anfitrión S/220 / Huésped S/580│
+└─────────────────────────────────────┘
+```
+
+#### PASO 5: Payout Dividido — Reparación + Excedente en un Solo Contrato (PayBot + WDK)
+
+```
+BACKEND (PayBot Agent):
+
+├─ Verificar arbitration: split aprobado ✓
+├─ Verificar guardrails estándar (whitelist, daily limit) ✓
+├─ Llamar Deal.sol.splitRelease(repairAmount=220, refundAmount=580)
+│  └─ El propio contrato divide el escrow, no dos llamadas manuales sueltas
+├─ Ejecutar 2 transferencias WDK en el mismo batch:
+│  ├─ wdk send --to anfitrion --amount 59 --token USDT   (S/220 → 59 USDT, reparación)
+│  └─ wdk send --to huesped --amount 156 --token USDT    (S/580 → 156 USDT, excedente)
+├─ Guardar ambos tx_hash en payout_logs con role: "host_repair" / "guest_refund"
+└─ Emitir WebSocket: "split_payout_complete"
+
+BOT (notifica por separado):
+Anfitrión: "✅ Daño verificado y aprobado
+Recibiste: 59 USDT (S/220) por reparación"
+
+Huésped: "✅ Daño evaluado: S/220 de S/300 reclamados
+Recibiste de vuelta: 156 USDT (S/580, tu excedente)"
+
+WEB (final):
+Deal status: "COMPLETED"
+Timeline:
+├─ Depósito creado (contrato):   2024-08-28 09:00 ✓
+├─ Depósito bloqueado on-chain:  2024-08-28 09:05 ✓
+├─ Check-in:                     2024-08-28 15:00 ✓
+├─ Check-out:                    2024-08-31 11:00 ✓
+├─ Daño reportado:                2024-08-31 14:20 ✓
+├─ Arbitraje (split S/220/S/580): 2024-08-31 15:00 ✓
+└─ Payout dividido:               2024-08-31 15:03 ✓
+   ├─ Anfitrión: 59 USDT (reparación)
+   └─ Huésped:  156 USDT (excedente)
+
+[Rating Section]:
+Huésped: ⭐⭐⭐⭐ "Justo, me devolvieron lo que no era daño real"
+Anfitrión: ⭐⭐⭐⭐⭐ "Cobré la reparación sin discutir con el huésped"
+```
+
+#### Diferencias clave entre los dos casos (tabla)
+
+```
+                        CASO B (S/12,000)          CASO C (S/800 depósito)
+Dirección del dinero    Comprador→Vendedor         Huésped↔Anfitrión (bidireccional)
+Cuándo se bloquea       Al pagar cada hito         ANTES de la estadía (contrato)
+Pagos                   3 pagos por hito           1 depósito, resuelto después
+Escrow                  Parcial, por hito          Completo, con posible split
+Evidencia               1 set por hito             Antes/después, solo si hay disputa
+Arbitraje               Binario por hito           Estima MONTO de daño, no solo veredicto
+Resultado posible       Pagado o disputado         100% host | 100% guest | split entre ambos
+Payout                  3 transacciones WDK        2 transacciones WDK simultáneas (split)
+Contrato on-chain       Escrow con hitos           Deal.sol.splitRelease() nativo
+Auditoría               payout_logs + high_value_audit_logs   payout_logs con role (host_repair/guest_refund)
 ```
 
 ---
@@ -1018,8 +985,13 @@ created_at TIMESTAMP
 updated_at TIMESTAMP
 completed_at TIMESTAMP
 smart_contract_address VARCHAR
+deal_type VARCHAR (service, deposit — "deposit" = depósito reembolsable estilo Airbnb)
 is_milestone_based BOOLEAN (default false)
 high_value BOOLEAN (true si amount_usdt > 1000, activa guardrails extra)
+checkin_at TIMESTAMP (solo deal_type=deposit)
+checkout_at TIMESTAMP (solo deal_type=deposit)
+repair_amount_usdt FLOAT (solo deal_type=deposit, monto aprobado para el host)
+refund_amount_usdt FLOAT (solo deal_type=deposit, excedente devuelto al guest)
 ```
 
 **milestones** (solo si `deals.is_milestone_based = true`)
@@ -1076,6 +1048,8 @@ completed_at TIMESTAMP
 ```sql
 id UUID PRIMARY KEY
 deal_id UUID (FK deals)
+milestone_id UUID (FK milestones, nullable — solo si aplica)
+role VARCHAR (payment, host_repair, guest_refund — default "payment")
 tx_hash VARCHAR
 amount_usdt FLOAT
 recipient_wallet VARCHAR
@@ -1538,11 +1512,12 @@ heroku logs -t
 **Deal Mock**
 ```json
 {
-  "id": "deal_abc123",
-  "service": "Reparar baño",
-  "amount": 150,
+  "id": "deal_xyz789",
+  "service": "Remodelación cocina completa",
+  "amount": 12000,
   "status": "pending_buyer",
-  "seller": "plomero_juan",
+  "is_milestone_based": true,
+  "seller": "constructora_test",
   "buyer": "cliente_test"
 }
 ```
