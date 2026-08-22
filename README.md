@@ -1,4 +1,4 @@
-# TrustLayer + PayBot 🚀
+# Verity 🚀
 
 **Sistema universal de garantía blockchain + Agente autónomo de pagos con WDK CLI**
 
