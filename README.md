@@ -29,14 +29,14 @@
 
 **Diferencial:**
 - ✅ **Kapso**: Pagos locales sin wallet (QR, transferencia bancaria)
-- ✅ **Telegram Bot**: Interfaz conversacional natural
+- ✅ **WhatsApp Bot**: Interfaz conversacional natural
 - ✅ **Web Dashboard**: Transparencia en tiempo real
 - ✅ **GenLayer**: Arbitraje por IA (Gemini + Claude)
 - ✅ **PayBot + WDK**: Pagos automáticos en USDT
 - ✅ **Animación Live**: Ver agents trabajando en la web
 
 **Stack:**
-- Frontend: Next.js 14 (dashboard) + Telegram Bot (Node.js)
+- Frontend: Next.js 14 (dashboard) + WhatsApp Bot (Node.js)
 - Backend: FastAPI (Python)
 - Blockchain: Solidity (Avalanche Sepolia)
 - Pagos: Kapso + WDK CLI
@@ -60,8 +60,8 @@ Usuario no-tech = "¿Wallet? ¿Blockchain? ¿Seed phrase?"
                   ❌ Requiere Metamask
                   ❌ Requiere entender gas fees
 
-AHORA (Kapso + Telegram):
-Usuario = Abre Telegram (ya está ahí)
+AHORA (Kapso + WhatsApp):
+Usuario = Abre WhatsApp (ya está ahí)
         = Escanea QR Kapso (paga con su banco)
         = ✅ 30 segundos, dinero real local
         = ✅ No ve blockchain nunca
@@ -115,7 +115,7 @@ Solución:
                 ┌─────────────┴──────────────┐
                 │                            │
         ┌───────▼────────┐         ┌────────▼─────────┐
-        │ TELEGRAM BOT   │         │ WEB DASHBOARD    │
+        │ WHATSAPP BOT   │         │ WEB DASHBOARD    │
         │ (Node.js)      │         │ (Next.js)        │
         │                │         │                  │
         │ ✅ Crear deal  │         │ ✅ Analytics    │
@@ -150,12 +150,12 @@ Solución:
 
 ### Capa 1: Interfaz de Usuario (Entrada)
 
-**TELEGRAM BOT (Node.js)**
+**WHATSAPP BOT (Node.js)**
 - Conversación natural
 - Kapso QR para pagos
 - Recibir fotos con metadata
 - Notificaciones en tiempo real
-- Botones inline para acciones
+- Botones interactivos (WhatsApp Interactive Messages) para acciones
 
 **WEB DASHBOARD (Next.js)**
 - Authentication JWT
@@ -170,7 +170,7 @@ Solución:
 **FASTAPI (Python)**
 
 Routers:
-- `/api/auth/telegram` - Autenticación Telegram
+- `/api/auth/whatsapp` - Autenticación WhatsApp
 - `/api/deals/*` - CRUD deals
 - `/api/arbitrage/*` - GenLayer
 - `/api/kapso/*` - Integración Kapso
@@ -191,7 +191,7 @@ Agents:
 ### Capa 3: Data Layer
 
 **SUPABASE (PostgreSQL)**
-- users (id, telegram_id, wallet_address, rating)
+- users (id, whatsapp_number, wallet_address, rating)
 - deals (id, seller_id, buyer_id, amount, status, created_at)
 - photos (id, deal_id, ipfs_hash, metadata)
 - payments (id, deal_id, kapso_payment_id, amount, status)
@@ -241,10 +241,10 @@ MONTO TOTAL: S/12,000 (~3,250 USDT)
 ESTRUCTURA: 3 hitos (Demolición 20% | Instalación 50% | Acabados 30%)
 ```
 
-#### PASO 1: Crear Deal con Hitos (Telegram + Backend)
+#### PASO 1: Crear Deal con Hitos (WhatsApp + Backend)
 
 ```
-USUARIO (Telegram):
+USUARIO (WhatsApp):
 Constructora: "/crear_deal"
 Bot: "¿Qué servicio?"
 Constructora: "Remodelación cocina completa"
@@ -362,10 +362,10 @@ MONTO DEPÓSITO: S/800 (~216 USDT), bloqueado ANTES del check-in
 POSIBLES DESENLACES: reembolso total | reembolso parcial + reparación | sin reembolso
 ```
 
-#### PASO 0: Reserva y Creación del Contrato de Depósito (Telegram + Backend + Deal.sol)
+#### PASO 0: Reserva y Creación del Contrato de Depósito (WhatsApp + Backend + Deal.sol)
 
 ```
-USUARIO (Telegram):
+USUARIO (WhatsApp):
 Huésped: "/reservar Depto Miraflores"
 Bot: "Fechas de estadía?"
 Huésped: "28 ago - 31 ago"
@@ -538,7 +538,7 @@ verify-app/
 ├── 📄 docker-compose.yml
 ├── 📄 LICENSE
 │
-├── 🤖 bot/                           ← TELEGRAM BOT (Node.js)
+├── 🤖 bot/                           ← WHATSAPP BOT (Node.js)
 │   ├── package.json
 │   ├── .env.example
 │   ├── index.js                      ← Entry point
@@ -712,20 +712,20 @@ TASKS:
 ├─ Crear repositorio + estructura carpetas
 ├─ Setup Node.js + Python envs
 ├─ Crear .env files (plantilla)
-├─ Setup Telegram bot (@BotFather) → obtener token
+├─ Setup WhatsApp Business API (Meta for Developers) → obtener token + phone_number_id
 ├─ Setup Kapso account → obtener API key
 ├─ Setup Supabase project → database + auth
 ├─ Setup Pinata account → IPFS
 ├─ Install dependencies:
-│  ├─ bot: npm install telegrambot axios dotenv
+│  ├─ bot: npm install express axios dotenv
 │  ├─ frontend: npm install next react axios ws
 │  └─ backend: pip install fastapi uvicorn supabase dotenv
-└─ Test: Telegram bot responds to /start
+└─ Test: WhatsApp bot responde a mensaje de prueba
 
 DELIVERABLE: Proyecto listo, dependencias instaladas
 ```
 
-### HORA 3-7: Telegram Bot Base (4h)
+### HORA 3-7: WhatsApp Bot Base (4h)
 
 ```
 TASKS:
@@ -736,7 +736,7 @@ TASKS:
 ├─ Handler: /help
 ├─ Integración backend_api.js (llamar FastAPI)
 ├─ Formateo de mensajes (bonitos, con markdown)
-├─ Botones inline para acciones
+├─ Botones interactivos (WhatsApp Interactive Messages) para acciones
 └─ Deploy a Heroku/Railway
 
 TESTS:
@@ -755,7 +755,7 @@ TASKS:
 ├─ FastAPI app structure
 ├─ Supabase client setup
 ├─ Auth router:
-│  └─ POST /api/auth/telegram (crear usuario)
+│  └─ POST /api/auth/whatsapp (crear usuario)
 │
 ├─ Deals router:
 │  ├─ POST /api/deals/create
@@ -785,7 +785,7 @@ DELIVERABLE: Backend CRUD funciona, Kapso integrado
 ```
 TASKS:
 ├─ Layout base (header, sidebar, footer)
-├─ Auth page (login con Telegram JWT)
+├─ Auth page (login con WhatsApp JWT)
 ├─ Dashboard overview:
 │  ├─ Cards: total ganado, deals, rating
 │  └─ Tabla: deals recientes
@@ -882,7 +882,7 @@ TASKS:
 ├─ docs/SETUP.md (cómo correr localmente)
 │
 ├─ Video demo (2 minutos):
-│  ├─ Parte 1 (60 seg): Telegram bot
+│  ├─ Parte 1 (60 seg): WhatsApp bot
 │  │  ├─ Crear deal
 │  │  ├─ Kapso QR
 │  │  ├─ Enviar foto
@@ -942,14 +942,18 @@ PINATA_API_KEY=your_pinata_key
 PINATA_API_SECRET=your_secret
 
 JWT_SECRET=your_jwt_secret
-TELEGRAM_BOT_TOKEN=your_bot_token
+WHATSAPP_API_TOKEN=your_whatsapp_token
+WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=your_verify_token
 
 CORS_ORIGINS=http://localhost:3000,http://localhost:8000
 ```
 
 **Bot (.env)**
 ```
-TELEGRAM_BOT_TOKEN=your_bot_token
+WHATSAPP_API_TOKEN=your_whatsapp_token
+WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=your_verify_token
 BACKEND_URL=http://localhost:8000
 KAPSO_MERCHANT_ID=your_merchant_id
 NODE_ENV=development
@@ -960,10 +964,8 @@ NODE_ENV=development
 **users**
 ```sql
 id UUID PRIMARY KEY
-telegram_id BIGINT UNIQUE
-telegram_username VARCHAR
+whatsapp_number VARCHAR UNIQUE (identificador WhatsApp + destino Kapso)
 wallet_address VARCHAR
-phone_number VARCHAR
 display_name VARCHAR
 profile_photo_url VARCHAR
 rating FLOAT (0-5)
@@ -1066,12 +1068,12 @@ confirmed_at TIMESTAMP
 ### Authentication
 
 ```
-POST /api/auth/telegram
-Body: { telegram_id, telegram_username, phone_number }
+POST /api/auth/whatsapp
+Body: { whatsapp_number, display_name }
 Response: { token, user_id, created: true/false }
 
 Errors:
-  400 - Invalid telegram_id
+  400 - Invalid whatsapp_number
   500 - Database error
 ```
 
@@ -1191,7 +1193,7 @@ Response: { status, amount, confirmed_at }
 
 ## COMPONENTES PRINCIPALES
 
-### 1. Telegram Bot Handlers
+### 1. WhatsApp Bot Handlers
 
 **create_deal.js**
 - Conversación: Servicio → Precio → Descripción
@@ -1304,7 +1306,7 @@ mkdir -p bot frontend backend contracts docs
 # Install bot
 cd bot
 npm init -y
-npm install telegrambot axios dotenv ws
+npm install express axios dotenv ws
 cd ..
 
 # Install frontend
@@ -1331,7 +1333,7 @@ cp frontend/.env.example frontend/.env.local
 cp backend/.env.example backend/.env
 
 # Editar con tus keys
-# - Telegram Bot Token (@BotFather)
+# - WhatsApp Business API Token + Phone Number ID (Meta for Developers)
 # - Kapso credentials
 # - Supabase URL + keys
 # - Gemini + Claude API keys
@@ -1348,14 +1350,14 @@ cp backend/.env.example backend/.env
 # Ver scripts en docs/supabase-migrations.sql
 ```
 
-### Paso 4: Deploy Telegram Bot
+### Paso 4: Deploy WhatsApp Bot
 
 ```bash
 cd bot
 npm start
 
 # Esperar a que esté listo
-# Probar: @tu_bot_name /start
+# Probar: enviar "hola" al número de WhatsApp Business configurado
 ```
 
 ### Paso 5: Correr Backend
@@ -1500,7 +1502,7 @@ heroku logs -t
 
 ### Docs Externas
 
-- Telegram Bot API: https://core.telegram.org/bots/api
+- WhatsApp Business Platform (Cloud API): https://developers.facebook.com/docs/whatsapp/cloud-api
 - FastAPI: https://fastapi.tiangolo.com
 - Next.js: https://nextjs.org/docs
 - Solidity: https://docs.soliditylang.org
