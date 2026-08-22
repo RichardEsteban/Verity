@@ -1,6 +1,6 @@
-# 🚀 VERIFY - Arquitectura Completa & Plan de Desarrollo
+# 🚀 VERIFY 
 
-**Documento de referencia para desarrollo (26 horas)**
+**Documento de referencia para desarrollo **
 
 ---
 
