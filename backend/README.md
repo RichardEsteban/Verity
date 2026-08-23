@@ -18,7 +18,7 @@ con un error claro en vez de fingir una transaccion.
 
 **Opcion rapida (recomendada para probar):** usa la wallet de demo ya
 provista, con el token de prueba ya deployado -- ver la seccion
-["Para el jurado"](../README.md#-para-el-jurado--verificar-el-pago-real-via-wdk-en-5-minutos)
+["Verificación de Pago"](../README.md#verificación-de-pago)
 del README raiz. Es solo importar el seed phrase, unlock, registrar el
 token, y completar `backend/.env`.
 
