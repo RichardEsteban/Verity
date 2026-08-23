@@ -18,11 +18,6 @@ dist/
 *.env
 !*.env.example
 
-# Contracts
-contracts/artifacts/
-contracts/cache/
-contracts/typechain-types/
-
 # Misc
 .DS_Store
 *.log

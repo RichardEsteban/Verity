@@ -12,6 +12,15 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:3000,http://localhost:8000"
 
+    # WDK real (@tetherto/wdk-cli, Sepolia testnet) -- ver backend/wdk_bridge/.
+    # Sin estas variables, los payouts fallan con un error claro en vez de
+    # fingir una transaccion (a diferencia de Kapso/GenLayer, que siguen
+    # simulados a proposito).
+    wdk_wallet_name: str = ""
+    wdk_passphrase: str = ""
+    wdk_network: str = "sepolia"
+    wdk_token: str = "musdt"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
