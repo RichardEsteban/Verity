@@ -1,25 +1,25 @@
 # 🚀 VERIFY 
 ---
-## Demo en vivo
+## Live Demo
 
-No requiere instalar nada. Tres servicios desplegados, todos hablando entre sí:
+Nothing to install. Three deployed services, all talking to each other:
 
-| Servicio | URL |
+| Service | URL |
 |---|---|
-| **Chat de prueba del bot** (sin terminal) | **https://bot-production-f3de7.up.railway.app/demo** |
+| **Bot test chat** (no terminal needed) | **https://bot-production-f3de7.up.railway.app/demo** |
 | Dashboard (frontend) | https://frontend-gilt-pi-76.vercel.app |
 | API (backend, Swagger) | https://verity-production-866b.up.railway.app/docs |
 
-El bot corre en modo simulado (sin cuenta de WhatsApp Business real). La
-forma más simple de probarlo es la página de chat de arriba: es un cliente
-web que habla con el bot real por HTTP y muestra la conversación como si
-fuera WhatsApp, con botones para los comandos (`/crear_deal`, `/pagar`,
-enviar foto, `/arbitrar`). Sin instalar nada. Al crear un deal, el link que
-manda el bot queda clicable ahí mismo y abre el deal real en el dashboard
-(`/deals/<id>`, sin login) — así se ve el flujo completo: bot → backend →
+The bot runs in simulated mode (no real WhatsApp Business account). The
+simplest way to try it is the chat page above: a web client that talks to
+the real bot over HTTP and renders the conversation like WhatsApp, with
+buttons for the commands (`/crear_deal`, `/pagar`, send photo, `/arbitrar`).
+Nothing to install. When a deal is created, the link the bot sends becomes
+clickable right there and opens the real deal in the dashboard (`/deals/<id>`,
+no login) — that's the full flow visible end to end: bot → backend →
 frontend.
 
-Si prefieren terminal en vez de la página, es el mismo endpoint por curl:
+If you'd rather use a terminal than the page, it's the same endpoint via curl:
 
 ```bash
 BOT=https://bot-production-f3de7.up.railway.app
@@ -34,60 +34,60 @@ curl -X POST $BOT/dev/simulate-message -H "Content-Type: application/json" \
   -d '{"from":"+51999999999","text":"150"}'
 ```
 
-Para completar el flujo (pago, evidencia, arbitraje y el payout real vía
-WDK), seguir el resto de la conversación (con los botones o por curl — ver
-[`bot/README.md`](bot/README.md)) y disparar
-`/dashboard/deals/<deal_id>/live` en el dashboard para ver la animación de
-arbitraje conectada al WebSocket real del backend.
+To complete the flow (payment, evidence, arbitration and the real WDK
+payout), continue the conversation (with the buttons or via curl — see
+[`bot/README.md`](bot/README.md)) and open
+`/dashboard/deals/<deal_id>/live` in the dashboard to watch the arbitration
+animation connected to the backend's real WebSocket.
 
 ---
 
-## Verificación de Pago
+## Payment Verification
 
-Este proyecto usa **`@tetherto/wdk-cli`** (el paquete requerido para Track 1)
-para ejecutar pagos reales en Sepolia testnet. Los pasos a continuación
-generan una transacción nueva, verificable de forma independiente en
+This project uses **`@tetherto/wdk-cli`** (the package required for Track 1)
+to execute real payments on Sepolia testnet. The steps below generate a
+new transaction, independently verifiable on
 [sepolia.etherscan.io](https://sepolia.etherscan.io).
 
-Se utiliza una wallet de prueba dedicada, sin valor real,
+A dedicated test wallet with no real value is used
 ("Use a dedicated test wallet with limited funds").
-Cuenta con ~999,000 `musdt` (token propio, mismo estándar ERC-20 que USDT,
-6 decimales — detalle en [`contracts/README.md`](contracts/README.md))
-y Sepolia ETH para gas.
+It holds ~999,000 `musdt` (a custom token, same ERC-20 standard as USDT,
+6 decimals — details in [`contracts/README.md`](contracts/README.md))
+and Sepolia ETH for gas.
 
 ```bash
-# 1. Instalar el CLI (Node >= 22.18.0)
+# 1. Install the CLI (Node >= 22.18.0)
 npm install -g @tetherto/wdk-cli
 
-# IMPORTANTE: abran una terminal NUEVA despues de este install (o reinicien
-# VS Code si usan su terminal integrada) -- si no, el comando `wdk` de abajo
-# no se va a encontrar aunque la instalacion haya funcionado.
+# IMPORTANT: open a NEW terminal after this install (or restart VS Code if
+# using its integrated terminal) -- otherwise the `wdk` command below won't
+# be found even though the install succeeded.
 
-# 2. Importar la wallet de prueba
+# 2. Import the test wallet
 export WDK_PASSPHRASE="verify-demo-2026"
 echo "ketchup mistake verify observe face chunk lunar palace retire february begin lecture" | wdk wallet import --name verify --seed-stdin
 wdk wallet unlock --name verify --ttl 0
 
-# 3. Registrar el token de prueba (ya deployado, ver contracts/deployed.json)
+# 3. Register the test token (already deployed, see contracts/deployed.json)
 wdk token add '{"network":"sepolia","token":"musdt","symbol":"USDT","decimals":6,"isNative":false,"address":"0x859e861cfA14f8e5aA5765Fe3941670FB41E5A8A"}'
 
-# 4. Mandar una transferencia real
+# 4. Send a real transfer
 wdk send --network sepolia --to 0x000000000000000000000000000000000000dEaD --amount 1 --token musdt --wallet verify --json
 ```
 
-El comando retorna un `txHash` real, verificable en
+The command returns a real `txHash`, verifiable at
 `https://sepolia.etherscan.io/tx/<hash>`.
 
-Para probar el flujo completo del producto (bot → backend → arbitraje IA →
-payout real), completar `backend/.env` con las mismas credenciales
+To try the full product flow (bot → backend → AI arbitration → real
+payout), fill in `backend/.env` with the same credentials
 (`WDK_WALLET_NAME=verify`, `WDK_PASSPHRASE=verify-demo-2026`,
-`WDK_NETWORK=sepolia`, `WDK_TOKEN=musdt`) y seguir
-[`backend/README.md`](backend/README.md). Kapso, el arbitraje por IA
-(Gemini/Claude) y el almacenamiento de fotos están simulados de forma
-intencional — la única integración real es el pago vía WDK.
+`WDK_NETWORK=sepolia`, `WDK_TOKEN=musdt`) and follow
+[`backend/README.md`](backend/README.md). Kapso, AI arbitration
+(Gemini/Claude) and photo storage are intentionally simulated — the only
+real integration is the payment via WDK.
 
-Transacciones ya minadas durante el desarrollo (referencia adicional en
-caso de que la red esté lenta el día de la revisión):
+Transactions already mined during development (extra reference in case the
+network is slow on review day):
 [`0x65cb292a...988613`](https://sepolia.etherscan.io/tx/0x65cb292a20b26e2df039a749b8b16ee4d79cde37b526a7fe84e63932c9988613) ·
 [`0xb3b540a6...1ac160`](https://sepolia.etherscan.io/tx/0xb3b540a6913d1fe909527b9a46ffb37ffe3ee23cb3739ea458b15da1da1ac160)
 
