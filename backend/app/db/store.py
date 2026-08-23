@@ -46,6 +46,14 @@ def list_arbitration_logs(deal_id: str) -> list[dict]:
     return [a for a in arbitration_logs.values() if a["deal_id"] == deal_id]
 
 
+def list_payments_for_deal(deal_id: str) -> list[dict]:
+    return [p for p in payments.values() if p["deal_id"] == deal_id]
+
+
+def list_payouts_for_deal(deal_id: str) -> list[dict]:
+    return [p for p in payout_logs.values() if p["deal_id"] == deal_id]
+
+
 def sum_confirmed_payouts_today(recipient_wallet: str, since_iso: str) -> float:
     return sum(
         p["amount_usdt"]

@@ -65,3 +65,21 @@ def add_photo(deal_id: str, uploaded_by: str, ipfs_hash: str, metadata: dict) ->
 def get_latest_photo(deal_id: str) -> Optional[Photo]:
     rows = store.list_photos_for_deal(deal_id)
     return Photo(**rows[0]) if rows else None
+
+
+def get_deal_detail(deal_id: str) -> Optional[dict]:
+    """Deal + lo que la pantalla de detalle del frontend necesita: vendedor,
+    fotos, pagos, payouts y el log de arbitraje. Todo en un solo round-trip."""
+    row = store.deals.get(deal_id)
+    if row is None:
+        return None
+
+    seller = store.users.get(row["seller_id"])
+    return {
+        **row,
+        "seller": seller,
+        "photos": store.list_photos_for_deal(deal_id),
+        "payments": store.list_payments_for_deal(deal_id),
+        "payouts": store.list_payouts_for_deal(deal_id),
+        "arbitration": store.list_arbitration_logs(deal_id),
+    }
