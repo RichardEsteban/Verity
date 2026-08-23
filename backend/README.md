@@ -16,8 +16,20 @@ con un error claro en vez de fingir una transaccion.
 
 ### Setup de WDK (una sola vez)
 
+**Opcion rapida (recomendada para probar):** usa la wallet de demo ya
+provista, con el token de prueba ya deployado -- ver la seccion
+["Para el jurado"](../README.md#-para-el-jurado--verificar-el-pago-real-via-wdk-en-5-minutos)
+del README raiz. Es solo importar el seed phrase, unlock, registrar el
+token, y completar `backend/.env`.
+
+**Opcion desde cero (tu propia wallet):**
+
 ```bash
 npm install -g @tetherto/wdk-cli   # Node >= 22.18.0
+# IMPORTANTE: abre una terminal nueva despues de este install, o el
+# comando `wdk` de abajo no se va a encontrar aunque la instalacion haya
+# funcionado (el PATH se actualiza a nivel de sistema, no de la terminal
+# que ya tenias abierta).
 
 # Crear la wallet del backend (queda encriptada en ~/.config/wdk-cli/)
 export WDK_PASSPHRASE="elige-una-passphrase"
@@ -29,7 +41,7 @@ wdk get address --network sepolia --json
 # fondeala en https://faucets.chain.link/sepolia o https://faucet.quicknode.com/ethereum/sepolia
 ```
 
-Luego desplega el token de prueba (ver [`../contracts`](../contracts)) y
+Luego desplega tu propio token de prueba (ver [`../contracts`](../contracts)) y
 registralo:
 
 ```bash

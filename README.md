@@ -4,6 +4,59 @@
 
 ---
 
+## 🏆 Para el jurado — verificar el pago real via WDK en ~5 minutos
+
+Este proyecto usa **`@tetherto/wdk-cli`** (el paquete requerido para Track 1)
+para hacer pagos reales en Sepolia testnet — no es un hash inventado. Los
+pasos de abajo generan **una transacción nueva, verificable por ustedes
+mismos** en [sepolia.etherscan.io](https://sepolia.etherscan.io), con su
+propio timestamp.
+
+Usamos una wallet de prueba dedicada, sin valor real, tal como piden las
+reglas del hackathon ("Use a dedicated test wallet with limited funds").
+Tiene ~999,000 `musdt` (un token propio, mismo estandar ERC-20 que USDT,
+6 decimales — ver por que en [`contracts/README.md`](contracts/README.md))
+y algo de Sepolia ETH para gas.
+
+```bash
+# 1. Instalar el CLI (Node >= 22.18.0)
+npm install -g @tetherto/wdk-cli
+
+# IMPORTANTE: abran una terminal NUEVA despues de este install (o reinicien
+# VS Code si usan su terminal integrada) -- si no, el comando `wdk` de abajo
+# no se va a encontrar aunque la instalacion haya funcionado.
+
+# 2. Importar la wallet de prueba
+export WDK_PASSPHRASE="verify-demo-2026"
+echo "ketchup mistake verify observe face chunk lunar palace retire february begin lecture" | wdk wallet import --name verify --seed-stdin
+wdk wallet unlock --name verify --ttl 0
+
+# 3. Registrar el token de prueba (ya deployado, ver contracts/deployed.json)
+wdk token add '{"network":"sepolia","token":"musdt","symbol":"USDT","decimals":6,"isNative":false,"address":"0x859e861cfA14f8e5aA5765Fe3941670FB41E5A8A"}'
+
+# 4. Mandar una transferencia real
+wdk send --network sepolia --to 0x000000000000000000000000000000000000dEaD --amount 1 --token musdt --wallet verify --json
+```
+
+El comando imprime un `txHash` real. Péguenlo en
+`https://sepolia.etherscan.io/tx/<hash>` para verlo minado.
+
+Para probar el flujo completo del producto (bot → backend → arbitraje IA →
+payout real), completen `backend/.env` con las mismas credenciales
+(`WDK_WALLET_NAME=verify`, `WDK_PASSPHRASE=verify-demo-2026`,
+`WDK_NETWORK=sepolia`, `WDK_TOKEN=musdt`) y sigan
+[`backend/README.md`](backend/README.md). Kapso, el arbitraje por IA
+(Gemini/Claude) y el almacenamiento de fotos estan simulados a proposito —
+solo el pago via WDK es una integracion real, que es lo que este track
+evalua.
+
+Transacciones ya minadas, generadas durante el desarrollo (no truco, por si
+la red esta lenta el dia de la revision):
+[`0x65cb292a...988613`](https://sepolia.etherscan.io/tx/0x65cb292a20b26e2df039a749b8b16ee4d79cde37b526a7fe84e63932c9988613) ·
+[`0xb3b540a6...1ac160`](https://sepolia.etherscan.io/tx/0xb3b540a6913d1fe909527b9a46ffb37ffe3ee23cb3739ea458b15da1da1ac160)
+
+---
+
 ## 📋 TABLA DE CONTENIDOS
 
 1. [Resumen Ejecutivo](#resumen-ejecutivo)
