@@ -4,6 +4,49 @@
 
 ---
 
+## Demo en vivo
+
+No requiere instalar nada. Tres servicios desplegados, todos hablando entre sí:
+
+| Servicio | URL |
+|---|---|
+| Dashboard (frontend) | https://frontend-gilt-pi-76.vercel.app |
+| API (backend) | https://verity-production-866b.up.railway.app (docs: `/docs`) |
+| Bot de WhatsApp (modo simulado) | https://bot-production-f3de7.up.railway.app |
+
+El bot corre en modo simulado (sin cuenta de WhatsApp Business): en vez de
+mandar mensajes reales, expone `/dev/simulate-message` para probar la
+conversación completa por HTTP. Cada paso responde igual que le respondería
+al usuario por WhatsApp.
+
+```bash
+BOT=https://bot-production-f3de7.up.railway.app
+
+curl -X POST $BOT/dev/simulate-message -H "Content-Type: application/json" \
+  -d '{"from":"+51999999999","text":"/crear_deal"}'
+
+curl -X POST $BOT/dev/simulate-message -H "Content-Type: application/json" \
+  -d '{"from":"+51999999999","text":"Reparar caneria"}'
+
+curl -X POST $BOT/dev/simulate-message -H "Content-Type: application/json" \
+  -d '{"from":"+51999999999","text":"150"}'
+```
+
+La última respuesta incluye un `Link:` con el ID del deal. Abrirlo en el
+dashboard público (sin login):
+
+```
+https://frontend-gilt-pi-76.vercel.app/deals/<deal_id>
+```
+
+Ahí se ve el deal recién creado por el bot, en tiempo real. Para completar
+el flujo (pago, evidencia, arbitraje y el payout real vía WDK), seguir el
+resto de la conversación simulada en [`bot/README.md`](bot/README.md) y
+disparar `/dashboard/deals/<deal_id>/live` en el dashboard para ver la
+animación de arbitraje conectada al WebSocket real del backend.
+
+---
+
 ## Verificación para el jurado — pago real vía WDK
 
 Este proyecto usa **`@tetherto/wdk-cli`** (el paquete requerido para Track 1)
