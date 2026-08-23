@@ -86,3 +86,35 @@ def test_cannot_arbitrate_before_payment(client):
 
     arbitration = client.post(f"/api/arbitrage/{deal_id}/start")
     assert arbitration.status_code == 400
+
+
+def test_wdk_failure_disputes_the_deal_instead_of_faking_a_payout(client, monkeypatch):
+    from app.agents import paybot_agent
+    from app.agents.wdk_cli_wrapper import WdkSendError
+
+    async def failing_send_usdt(recipient_wallet: str, amount_usdt: float) -> str:
+        raise WdkSendError("WDK_SEED_PHRASE / USDT_CONTRACT_ADDRESS no configurados")
+
+    monkeypatch.setattr(paybot_agent, "send_usdt", failing_send_usdt)
+
+    headers = _auth_headers(client, whatsapp_number="+51977777777")
+    create = client.post(
+        "/api/deals/create", json={"service_description": "Cambiar cerradura", "amount_pen": 100}, headers=headers
+    )
+    deal_id = create.json()["deal_id"]
+    client.post(
+        "/api/kapso/webhook",
+        json={"deal_id": deal_id, "amount": 100, "status": "confirmed", "payment_id": "kapso_test_3"},
+    )
+    photo_bytes = b"fake-photo-content"
+    client.post(
+        f"/api/deals/{deal_id}/upload-photo",
+        files={"photo": ("after.jpg", photo_bytes, "image/jpeg")},
+        headers=headers,
+    )
+
+    arbitration = client.post(f"/api/arbitrage/{deal_id}/start")
+    assert arbitration.status_code == 502
+
+    deal = client.get(f"/api/deals/{deal_id}").json()
+    assert deal["status"] == "disputed"

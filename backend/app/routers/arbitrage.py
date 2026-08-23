@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.agents import genlayer_agent, paybot_agent
+from app.agents.wdk_cli_wrapper import WdkSendError
 from app.db import store
 from app.models import ArbitrationDecision, DealStatus
 from app.services import deal_service
@@ -30,6 +31,9 @@ async def start_arbitration(deal_id: str) -> dict:
             except paybot_agent.GuardrailError as exc:
                 deal_service.update_deal_status(deal_id, DealStatus.disputed)
                 raise HTTPException(422, str(exc))
+            except WdkSendError as exc:
+                deal_service.update_deal_status(deal_id, DealStatus.disputed)
+                raise HTTPException(502, f"Payout via WDK fallo: {exc}")
         deal_service.update_deal_status(deal_id, DealStatus.completed)
     else:
         deal_service.update_deal_status(deal_id, DealStatus.disputed)

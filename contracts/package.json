@@ -1,21 +1,15 @@
 {
-  "name": "contracts",
+  "name": "verify-contracts",
   "version": "1.0.0",
-  "description": "Smart contracts (Solidity, Avalanche Sepolia). Estructura reservada — implementación pendiente.",
-  "main": "index.js",
+  "description": "MockUSDT (ERC-20) en Avalanche Fuji testnet, para pagos reales via WDK.",
+  "private": true,
   "scripts": {
-  "test": "hardhat test"
-},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
-  "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
-    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.7",
-    "hardhat": "^3.14.0"
+    "deploy": "node scripts/deploy.mjs"
   },
+  "license": "MIT",
   "dependencies": {
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "ethers": "^6.17.0",
+    "solc": "^0.8.36"
   }
 }
