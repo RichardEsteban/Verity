@@ -31,11 +31,11 @@ def my_deals(
 
 
 @router.get("/{deal_id}")
-def get_deal(deal_id: str) -> Deal:
-    deal = deal_service.get_deal(deal_id)
-    if deal is None:
+def get_deal(deal_id: str) -> dict:
+    detail = deal_service.get_deal_detail(deal_id)
+    if detail is None:
         raise HTTPException(404, "Deal not found")
-    return deal
+    return detail
 
 
 @router.post("/{deal_id}/upload-photo")

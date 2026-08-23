@@ -46,7 +46,14 @@ def test_full_deal_flow_with_photo_gets_paid(client):
 
     earnings = client.get("/api/analytics/earnings", headers=headers).json()
     assert earnings["deals_count"] == 1
-    assert earnings["total"] == 150
+    assert earnings["total"] == 40.54  # 150 PEN / 3.7 -> USDT, lo que realmente recibe el vendedor
+
+    detail = client.get(f"/api/deals/{deal_id}").json()
+    assert detail["seller"]["whatsapp_number"] == "+51999999999"
+    assert len(detail["photos"]) == 1
+    assert len(detail["payments"]) == 1
+    assert len(detail["payouts"]) == 1
+    assert len(detail["arbitration"]) == 3
 
 
 def test_deal_without_photo_gets_disputed_and_not_paid(client):
