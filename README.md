@@ -1,18 +1,14 @@
 # 🚀 VERIFY 
-
-**Documento de referencia para desarrollo **
-
 ---
-
-## Verificación para el jurado — pago real vía WDK
+## Verificación de Pago
 
 Este proyecto usa **`@tetherto/wdk-cli`** (el paquete requerido para Track 1)
 para ejecutar pagos reales en Sepolia testnet. Los pasos a continuación
 generan una transacción nueva, verificable de forma independiente en
 [sepolia.etherscan.io](https://sepolia.etherscan.io).
 
-Se utiliza una wallet de prueba dedicada, sin valor real, conforme a las
-reglas del hackathon ("Use a dedicated test wallet with limited funds").
+Se utiliza una wallet de prueba dedicada, sin valor real,
+("Use a dedicated test wallet with limited funds").
 Cuenta con ~999,000 `musdt` (token propio, mismo estándar ERC-20 que USDT,
 6 decimales — detalle en [`contracts/README.md`](contracts/README.md))
 y Sepolia ETH para gas.
@@ -46,8 +42,7 @@ payout real), completar `backend/.env` con las mismas credenciales
 `WDK_NETWORK=sepolia`, `WDK_TOKEN=musdt`) y seguir
 [`backend/README.md`](backend/README.md). Kapso, el arbitraje por IA
 (Gemini/Claude) y el almacenamiento de fotos están simulados de forma
-intencional — la única integración real es el pago vía WDK, que es lo que
-este track evalúa.
+intencional — la única integración real es el pago vía WDK.
 
 Transacciones ya minadas durante el desarrollo (referencia adicional en
 caso de que la red esté lenta el día de la revisión):
@@ -91,14 +86,9 @@ caso de que la red esté lenta el día de la revisión):
 - Frontend: Next.js 14 (dashboard) + WhatsApp Bot (Node.js)
 - Backend: FastAPI (Python)
 - Blockchain: Solidity (Avalanche Sepolia)
-- Pagos: Kapso + WDK CLI
+- Pagos: WDK CLI
 - Data: Supabase + Pinata (IPFS)
 - AI: Gemini + Claude API
-
-**Timeline:** 26 horas (Aleph Hackathon)
-
-**Track:** WDK Track 1A ($1,000 USDT)
-
 ---
 
 ## EL PROBLEMA
@@ -161,7 +151,7 @@ Solución:
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                    USUARIO (Mercado Informal)                            │
 │                                                                           │
-│  Plomero, Taxista, Electricista = SIN WALLET, SIN CRYPTO               │
+│  Alquiler  de Inmuebles, Taxista, Electricista = SIN WALLET, SIN CRYPTO               │
 └─────────────────────────────────────────────────────────────────────────┘
                               │
                 ┌─────────────┴──────────────┐
@@ -639,7 +629,7 @@ verify-app/
 │   │
 │   ├── components/
 │   │   ├── agents/
-│   │   │   ├── AgentAnimation.tsx    ← ⭐ NUEVA
+│   │   │   ├── AgentAnimation.tsx    
 │   │   │   ├── GeminiAgent.tsx
 │   │   │   ├── ClaudeAgent.tsx
 │   │   │   ├── PayBotAgent.tsx
