@@ -6,18 +6,20 @@ No requiere instalar nada. Tres servicios desplegados, todos hablando entre sí:
 
 | Servicio | URL |
 |---|---|
+| **Chat de prueba del bot** (sin terminal) | **https://bot-production-f3de7.up.railway.app/demo** |
 | Dashboard (frontend) | https://frontend-gilt-pi-76.vercel.app |
 | API (backend, Swagger) | https://verity-production-866b.up.railway.app/docs |
-| Bot de WhatsApp (modo simulado) | https://bot-production-f3de7.up.railway.app/health |
 
-(La raíz `/` de backend y bot no sirve nada — son servicios sin interfaz
-propia. `/docs` es la API interactiva completa; `/health` solo confirma que
-el bot está arriba, la conversación se prueba con los `curl` de abajo.)
+El bot corre en modo simulado (sin cuenta de WhatsApp Business real). La
+forma más simple de probarlo es la página de chat de arriba: es un cliente
+web que habla con el bot real por HTTP y muestra la conversación como si
+fuera WhatsApp, con botones para los comandos (`/crear_deal`, `/pagar`,
+enviar foto, `/arbitrar`). Sin instalar nada. Al crear un deal, el link que
+manda el bot queda clicable ahí mismo y abre el deal real en el dashboard
+(`/deals/<id>`, sin login) — así se ve el flujo completo: bot → backend →
+frontend.
 
-El bot corre en modo simulado (sin cuenta de WhatsApp Business): en vez de
-mandar mensajes reales, expone `/dev/simulate-message` para probar la
-conversación completa por HTTP. Cada paso responde igual que le respondería
-al usuario por WhatsApp.
+Si prefieren terminal en vez de la página, es el mismo endpoint por curl:
 
 ```bash
 BOT=https://bot-production-f3de7.up.railway.app
@@ -32,18 +34,11 @@ curl -X POST $BOT/dev/simulate-message -H "Content-Type: application/json" \
   -d '{"from":"+51999999999","text":"150"}'
 ```
 
-La última respuesta incluye un `Link:` con el ID del deal. Abrirlo en el
-dashboard público (sin login):
-
-```
-https://frontend-gilt-pi-76.vercel.app/deals/<deal_id>
-```
-
-Ahí se ve el deal recién creado por el bot, en tiempo real. Para completar
-el flujo (pago, evidencia, arbitraje y el payout real vía WDK), seguir el
-resto de la conversación simulada en [`bot/README.md`](bot/README.md) y
-disparar `/dashboard/deals/<deal_id>/live` en el dashboard para ver la
-animación de arbitraje conectada al WebSocket real del backend.
+Para completar el flujo (pago, evidencia, arbitraje y el payout real vía
+WDK), seguir el resto de la conversación (con los botones o por curl — ver
+[`bot/README.md`](bot/README.md)) y disparar
+`/dashboard/deals/<deal_id>/live` en el dashboard para ver la animación de
+arbitraje conectada al WebSocket real del backend.
 
 ---
 
