@@ -11,8 +11,12 @@ No requiere instalar nada. Tres servicios desplegados, todos hablando entre sí:
 | Servicio | URL |
 |---|---|
 | Dashboard (frontend) | https://frontend-gilt-pi-76.vercel.app |
-| API (backend) | https://verity-production-866b.up.railway.app (docs: `/docs`) |
-| Bot de WhatsApp (modo simulado) | https://bot-production-f3de7.up.railway.app |
+| API (backend, Swagger) | https://verity-production-866b.up.railway.app/docs |
+| Bot de WhatsApp (modo simulado) | https://bot-production-f3de7.up.railway.app/health |
+
+(La raíz `/` de backend y bot no sirve nada — son servicios sin interfaz
+propia. `/docs` es la API interactiva completa; `/health` solo confirma que
+el bot está arriba, la conversación se prueba con los `curl` de abajo.)
 
 El bot corre en modo simulado (sin cuenta de WhatsApp Business): en vez de
 mandar mensajes reales, expone `/dev/simulate-message` para probar la
