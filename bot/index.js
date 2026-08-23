@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { getState } from "./state.js";
 import { ensureAuth } from "./middleware/auth.js";
@@ -15,10 +17,15 @@ import * as arbitrationHandler from "./handlers/arbitration.js";
 const PORT = process.env.PORT || 3001;
 const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || "dev-verify-token";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const app = express();
 app.use(express.json());
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+// Chat web de prueba (sin terminal): habla con /dev/simulate-message por fetch.
+app.get("/demo", (_req, res) => res.sendFile(path.join(__dirname, "public", "demo.html")));
 
 // Meta llama a este GET una sola vez al configurar el webhook, para verificarlo.
 app.get("/webhook", (req, res) => {

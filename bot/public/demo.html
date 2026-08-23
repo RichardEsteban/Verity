@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Verify — probar el bot</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #e5ddd5;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .phone {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: #075e54;
+    color: #fff;
+    padding: 14px 16px;
+  }
+  header h1 { font-size: 16px; margin: 0; }
+  header p { font-size: 12px; margin: 2px 0 0; opacity: 0.85; }
+  .phone-field {
+    padding: 8px 16px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #555;
+  }
+  .phone-field input {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    width: 130px;
+  }
+  .quick {
+    padding: 8px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: #f7f7f7;
+    border-bottom: 1px solid #ddd;
+  }
+  .quick button {
+    border: 1px solid #25d366;
+    color: #075e54;
+    background: #fff;
+    border-radius: 14px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .quick button:hover { background: #e9fbf1; }
+  .log {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background-image: radial-gradient(#00000008 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+  .bubble {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .bubble.user {
+    align-self: flex-end;
+    background: #dcf8c6;
+    border-top-right-radius: 0;
+  }
+  .bubble.bot {
+    align-self: flex-start;
+    background: #fff;
+    border-top-left-radius: 0;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  }
+  .bubble.error {
+    align-self: flex-start;
+    background: #fdecea;
+    color: #86181d;
+  }
+  .bubble a { color: #075e54; font-weight: 600; }
+  form {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    background: #f0f0f0;
+    border-top: 1px solid #ddd;
+  }
+  form input[type=text] {
+    flex: 1;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  form button {
+    background: #075e54;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 0 18px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  form button:disabled { opacity: 0.5; cursor: default; }
+  .hint {
+    font-size: 11px;
+    color: #888;
+    padding: 0 16px 8px;
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <header>
+      <h1>Verify — Bot de WhatsApp (demo)</h1>
+      <p>Modo simulado: no manda mensajes reales, corre contra el backend real.</p>
+    </header>
+
+    <div class="phone-field">
+      Número de prueba:
+      <input id="phone" type="text" value="+51999999999" />
+    </div>
+
+    <div class="quick" id="quick"></div>
+    <p class="hint">Empieza con "/crear_deal", o escribe abajo como si fueras el usuario de WhatsApp.</p>
+
+    <div class="log" id="log"></div>
+
+    <form id="form">
+      <input id="text" type="text" placeholder="Escribe un mensaje…" autocomplete="off" />
+      <button type="submit">Enviar</button>
+    </form>
+  </div>
+
+<script>
+  const log = document.getElementById("log");
+  const form = document.getElementById("form");
+  const textInput = document.getElementById("text");
+  const phoneInput = document.getElementById("phone");
+  const FRONTEND_URL = "https://frontend-gilt-pi-76.vercel.app";
+
+  const quickActions = [
+    { label: "/crear_deal", send: { text: "/crear_deal" } },
+    { label: "/pagar", send: { text: "/pagar" } },
+    { label: "📷 Enviar foto (simulada)", send: { mediaId: "foto_demo_" + Date.now() } },
+    { label: "/arbitrar", send: { text: "/arbitrar" } },
+    { label: "/mis_deals", send: { text: "/mis_deals" } },
+    { label: "/ayuda", send: { text: "/ayuda" } },
+  ];
+
+  const quickEl = document.getElementById("quick");
+  for (const action of quickActions) {
+    const btn = document.createElement("button");
+    btn.textContent = action.label;
+    btn.addEventListener("click", () => sendMessage(action.send, action.label));
+    quickEl.appendChild(btn);
+  }
+
+  function addBubble(text, cls) {
+    const div = document.createElement("div");
+    div.className = "bubble " + cls;
+
+    // convierte "https://.../deals/<id>" (o el placeholder verify.app/deals/<id>) en link real y clicable
+    const linked = text.replace(
+      /(?:https?:\/\/[^\s]*)?verify\.app\/deals\/([a-f0-9-]+)|(https?:\/\/frontend[^\s]*\/deals\/[a-f0-9-]+)/gi,
+      (match, idFromPlaceholder) => {
+        const url = idFromPlaceholder
+          ? `${FRONTEND_URL}/deals/${idFromPlaceholder}`
+          : match;
+        return `<a href="${url}" target="_blank" rel="noopener">${url}</a>`;
+      }
+    );
+    div.innerHTML = linked;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function sendMessage(payload, displayText) {
+    const from = phoneInput.value.trim();
+    if (!from) return;
+    addBubble(displayText, "user");
+
+    try {
+      const res = await fetch("/dev/simulate-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ from, ...payload }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error del bot");
+      addBubble(data.reply, "bot");
+    } catch (err) {
+      addBubble("Error: " + err.message, "error");
+    }
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const text = textInput.value.trim();
+    if (!text) return;
+    sendMessage({ text }, text);
+    textInput.value = "";
+  });
+
+  addBubble(
+    "Hola, soy el bot de Verify.\n\nComandos:\n/crear_deal - crear un nuevo trato\n/pagar - confirmar el pago del trato activo (simulado)\n/arbitrar - evaluar la evidencia y liberar el pago\n/mis_deals - ver tus tratos\n/ayuda - ver esta ayuda",
+    "bot"
+  );
+</script>
+</body>
+</html>
